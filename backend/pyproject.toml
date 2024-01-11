@@ -1,0 +1,26 @@
+[tool.poetry]
+name = "human-evaluation-tool"
+version = "1.0.0"
+description = "A backend server for the Human Evaluation Tool built using Flask"
+authors = ["Giovanni G. De Giacomo <giovanni@yaraku.com>"]
+license = "GPL-3.0-or-later"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+flask = "~2.3"
+flask-bcrypt = "~1.0"
+flask-jwt-extended = "~4.5"
+flask-migrate = "~4.0"
+flask-sqlalchemy = "~3.0"
+gunicorn = "~21.2"
+psycopg2 = "~2.9"
+python = "~3.10"
+python-dotenv = "~1.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "~23.11"
+flake8 = "~6.1"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"

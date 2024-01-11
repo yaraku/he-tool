@@ -1,0 +1,42 @@
+{
+  "name": "human-evaluation-tool",
+  "version": "1.0.0",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "^4.32.6",
+    "bootstrap": "^5.3.1",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-hot-toast": "^2.4.1",
+    "react-router-dom": "^6.14.2",
+    "seedrandom": "^3.0.5"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.18",
+    "@types/react-dom": "^18.2.7",
+    "@types/react-router-dom": "^5.3.3",
+    "@vitejs/plugin-react": "^4.0.4",
+    "autoprefixer": "^10.4.14",
+    "css-loader": "^6.8.1",
+    "esbuild-loader": "^3.1.0",
+    "eslint": "^8.46.0",
+    "eslint-plugin-react": "^7.33.1",
+    "node-sass": "^9.0.0",
+    "postcss": "^8.4.27",
+    "postcss-import": "^15.1.0",
+    "postcss-loader": "^7.3.3",
+    "prettier": "^3.0.1",
+    "prettier-plugin-tailwindcss": "^0.4.1",
+    "sass": "^1.64.2",
+    "sass-loader": "^13.3.2",
+    "tailwindcss": "^3.3.3",
+    "vite": "^4.4.8"
+  }
+}

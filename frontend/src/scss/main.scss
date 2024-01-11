@@ -1,0 +1,232 @@
+@import "node_modules/bootstrap/scss/bootstrap";
+@import "./colors";
+
+.table-striped tbody tr.alert-info {
+    /* alert-success */
+    color: #155724;
+    background-color: #d4edda;
+    border-color: #c3e6cb;
+    /* alert-info
+    color: #0c5460;
+    background-color: #d1ecf1;
+    border-color: #bee5eb;
+     */
+}
+
+#trgMarkingContainer ::selection{
+    background-color: $red;
+    color: $white;
+}
+
+#trgMarkingContainer .selected {
+    background-color: $red;
+    color: $white;
+}
+
+#trgMarkingContainer .selected::selection {
+    background-color: $white;
+    color: $red;
+}
+
+#srcMarkingContainer ::selection{
+    background-color: $green;
+    color: $white;
+}
+
+#srcMarkingContainer .selected {
+    background-color: $green;
+    color: $white;
+}
+
+#srcMarkingContainer .selected::selection {
+    background-color: $white;
+    color: $green;
+}
+
+#replicates .target .word.selected {
+    background-color: $red;
+    color: $white;
+}
+
+#replicates .source .word.selected {
+    background-color: $green;
+    color: $white;
+}
+
+.document .word.critical.selected, .reviews .word.critical.selected {
+    /* alert-error */
+    color: #721c24;
+    background-color: #f8d7da;
+    border-color: #f5c6cb;
+}
+
+.document .word.major.selected, .reviews .word.major.selected {
+    /* alert-warning */
+    color: #856404;
+    background-color: #fff3cd;
+    border-color: #ffeeba;
+}
+
+.document .word.minor.selected, .reviews .word.minor.selected {
+    /* alert-warning */
+    color: #856404;
+    background-color: lightyellow;
+    border-color: #ffeeba;
+}
+
+.document .word.not-judgable.selected, .reviews .word.not-judgable.selected {
+    /* alert-primary */
+    color: #004085;
+    background-color: #cce5ff;
+    border-color: #b8daff;
+}
+
+.reviews .word.no-error.selected {
+    /* alert-dark */
+    color: #1b1e21;
+    background-color: #d6d8d9;
+    border-color: #c6c8ca;
+}
+
+.document tr td, .reviews tr td {
+    padding: 0 5px;
+}
+
+#myAudio {
+    width: 100%;
+    margin: 1rem;
+}
+
+#annotation, #replicates, #doc_context, #reference {
+    margin: 1rem;
+}
+
+.evalChoice {
+    width: 100%;
+    margin: 4pt;
+}
+
+.evalLabel {
+    font-size: 16pt;
+    width: 100%;
+    padding: 4pt;
+    display: block;
+    border: 3px solid transparent;
+    border-radius: 0.25rem;
+    color: $gray-100;
+    text-align: center;
+    background-color: $gray-800;
+    transition: 0.2s;
+}
+
+.evalLabel :hover {
+    border-color: $green;
+}
+
+
+.evalSelected {
+    font-size: 16pt;
+    width: 100%;
+    padding: 4pt;
+    display: block;
+    border: 3px solid transparent;
+    border-radius: 0.25rem;
+    background-color: $green;
+    color: $gray-100;
+    text-align: center;
+    transition: 0.2s;
+}
+
+.evalSelected :hover {
+    border-color: $gray-800;
+}
+
+
+
+#choices {
+    margin: 16pt;
+}
+
+#annotate-form {
+    text-align: center;
+}
+
+#marking {
+    text-align: center;
+    padding-top: 16pt;
+}
+
+
+
+.row {
+    margin-bottom: 1rem;
+}
+
+body, main {
+    background-color: $gray-100;
+    color: $gray-800;
+}
+
+.postedit-area {
+    border: 0;
+    background-color: $gray-100;
+    font-size: 16pt;
+    font-family: 'Times New Roman', Times, serif;
+    resize: none;
+    outline: 0;
+    box-shadow: none;
+    border: none;
+    border-radius: 0;
+    box-sizing: content-box;
+    overflow-y: hidden;
+    padding: 1.5rem 0;
+    resize: none;
+}
+
+.postedit-area::selection {
+    background-color: $red;
+    color: $white;
+}
+
+#markingContainer {
+    font-size: 16pt;
+    /* font-family: 'Times New Roman', Times, serif; */
+    padding: 1.5rem 0;
+}
+
+.center {
+    display: flex;
+    justify-content: center;
+}
+
+.nav-link .active {
+    background-color: $blue;
+    color: $white;
+}
+
+.tab-active {
+    background-color: $green;
+}
+
+.translation-target {
+    padding: 1.5rem;
+    font-size: 16pt;
+    /* font-family: 'Times New Roman', Times, serif; */
+}
+
+.markingHead {
+    font-weight: bold;
+    font-size: 14pt;
+}
+
+.markingText {
+    font-size: 14pt;
+}
+
+.is_done {
+    padding-left: 1em;
+}
+
+select > optgroup > option > span.category_label {
+    padding: 0 1em;
+}
