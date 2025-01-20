@@ -1,21 +1,145 @@
 # Human Evaluation Tool
 
-## 0. Usage Demo
+A web-based tool for conducting human evaluation of machine translation outputs. This tool allows evaluators to assess and compare translations from different systems, mark errors, and provide detailed feedback.
+
+## Features
+
+- User authentication and authorization
+- Support for multiple language pairs
+- Error marking and categorization
+- Severity level assessment
+- Side-by-side comparison of translations
+- Progress tracking
+- Results aggregation and export
+
+## Demo
 
 Below is a quick video showing how the Human Evaluation Tool looks and works:
 
 https://github.com/yaraku/he-tool/assets/5934186/bb1dcf1c-a1e2-464c-af0a-1225e57eef56
 
-## 1. Building Dockerfile
+## Project Structure
 
-You can build this project with the following command:
+The project consists of three main components:
 
+- `backend/`: Flask-based REST API server
+- `frontend/`: React-based web application
+- `public/`: Static assets and built files
+
+## Prerequisites
+
+- Python 3.10 or later
+- Node.js 18 or later
+- PostgreSQL 13 or later
+- Poetry (Python package manager)
+- npm (Node.js package manager)
+
+## Installation and Setup
+
+### Option 1: Using Docker (Recommended)
+
+1. Build the Docker image:
 ```sh
-$ docker build -t yaraku/human-evaluation-tool .
+docker build -t yaraku/human-evaluation-tool .
 ```
 
-That should build the docker image. Once it's done, you can execute it with a command like this:
-
+2. Run the container:
 ```sh
-$ docker run --rm -it -p 8000:8000 yaraku/human-evaluation-tool
+docker run --rm -it -p 8000:8000 yaraku/human-evaluation-tool
 ```
+
+### Option 2: Manual Setup
+
+1. Set up the backend:
+```sh
+cd backend
+poetry install
+cp .env.example .env  # Create and configure your .env file
+poetry run flask db upgrade
+poetry run python main.py
+```
+
+2. Set up the frontend (in a new terminal):
+```sh
+cd frontend
+npm install
+npm run dev
+```
+
+3. Configure environment variables:
+   - Backend (`.env` file):
+     ```
+     FLASK_APP=main.py
+     FLASK_ENV=development
+     DATABASE_URL=postgresql://user:password@localhost:5432/he_tool
+     JWT_SECRET_KEY=your-secret-key
+     ```
+   - Frontend (`.env` file):
+     ```
+     VITE_API_URL=http://localhost:8000
+     ```
+
+## Usage
+
+1. Access the application at http://localhost:8000
+2. Register a new account or log in
+3. Create a new evaluation project
+4. Upload documents and system outputs
+5. Start evaluating translations
+
+## Development
+
+### Backend Development
+
+The backend is built with Flask and uses:
+- SQLAlchemy for database ORM
+- Flask-JWT-Extended for authentication
+- Flask-Migrate for database migrations
+
+Key commands:
+```sh
+cd backend
+poetry run flask db migrate  # Create new migrations
+poetry run flask db upgrade  # Apply migrations
+poetry run python main.py  # Run development server
+```
+
+### Frontend Development
+
+The frontend is built with React and uses:
+- Vite for build tooling
+- TailwindCSS for styling
+- React Query for data fetching
+
+Key commands:
+```sh
+cd frontend
+npm run dev  # Start development server
+npm run build  # Build for production
+npm run preview  # Preview production build
+```
+
+## Database Schema
+
+The application uses a PostgreSQL database with the following main entities:
+
+- Users: Evaluators and administrators
+- Documents: Source texts for evaluation
+- Systems: MT systems being evaluated
+- Evaluations: Evaluation projects
+- Annotations: User annotations and feedback
+- Markings: Error markings and categorizations
+
+For a detailed ER diagram, see `backend/README.md`.
+
+## Contributing
+
+1. Fork the repository
+2. Create a feature branch
+3. Commit your changes
+4. Push to the branch
+5. Create a Pull Request
+
+## License
+
+This project is licensed under the GPL-3.0 License - see the LICENSE file for details.
