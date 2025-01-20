@@ -50,38 +50,72 @@ docker run --rm -it -p 8000:8000 yaraku/human-evaluation-tool
 
 ### Option 2: Manual Setup
 
-1. Set up the backend:
+1. Install prerequisites:
+   - Python 3.10 or later
+   - Node.js 18 or later
+   - PostgreSQL 13 or later
+   - Poetry (Python package manager)
+   - npm (Node.js package manager)
+
+2. Set up PostgreSQL:
+```sh
+# Start PostgreSQL service
+sudo service postgresql start
+
+# Create database and set password
+sudo -u postgres createdb he_tool
+sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+```
+
+3. Set up the backend:
 ```sh
 cd backend
+
+# Install dependencies
 poetry install
-cp .env.example .env  # Create and configure your .env file
+
+# Create and configure .env file
+cat > .env << EOL
+FLASK_APP=main.py
+FLASK_ENV=development
+DB_HOST=localhost
+DB_PORT=5432
+DB_NAME=he_tool
+DB_USER=postgres
+DB_PASSWORD=postgres
+JWT_SECRET_KEY=development-secret-key
+EOL
+
+# Initialize and run migrations
+poetry run flask db init
+poetry run flask db migrate
 poetry run flask db upgrade
+
+# Start the backend server
 poetry run python main.py
 ```
 
-2. Set up the frontend (in a new terminal):
+4. Set up the frontend (in a new terminal):
 ```sh
 cd frontend
+
+# Install dependencies
 npm install
+
+# Create and configure .env file
+echo "VITE_API_URL=http://localhost:5000" > .env
+
+# Start the development server
 npm run dev
 ```
 
-3. Configure environment variables:
-   - Backend (`.env` file):
-     ```
-     FLASK_APP=main.py
-     FLASK_ENV=development
-     DATABASE_URL=postgresql://user:password@localhost:5432/he_tool
-     JWT_SECRET_KEY=your-secret-key
-     ```
-   - Frontend (`.env` file):
-     ```
-     VITE_API_URL=http://localhost:8000
-     ```
+5. Access the application:
+   - Frontend: http://localhost:5173
+   - Backend API: http://localhost:5000
 
 ## Usage
 
-1. Access the application at http://localhost:8000
+1. Access the application at http://localhost:5173
 2. Register a new account or log in
 3. Create a new evaluation project
 4. Upload documents and system outputs
