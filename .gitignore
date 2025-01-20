@@ -66,3 +66,4 @@ package-lock.json
 
 # Database files
 *.db
+backend/migrations/
