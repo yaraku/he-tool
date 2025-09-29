@@ -32,6 +32,8 @@ RUN npm run build
 # Stage 2: Execute the backend
 FROM python:3.10-slim-bullseye
 
+ARG POETRY_VERSION_CONSTRAINT=">=1.5,<1.7"
+
 # 1. Install required system packages
 ARG DEBIAN_FRONTEND=noninteractive
 ENV PIP_DEFAULT_TIMEOUT 500
@@ -39,7 +41,7 @@ ENV PIP_DISABLE_PIP_VERSION_CHECK 1
 ENV PIP_NO_CACHE_DIR 1
 RUN apt update                                            \
     && apt install -y build-essential libpq-dev
-RUN pip install poetry
+RUN pip install "poetry${POETRY_VERSION_CONSTRAINT}"
 
 # 2. Set working directory and copy files to container
 WORKDIR /root
@@ -53,7 +55,7 @@ ENV PYTHONDONTWRITEBYTECODE 1
 ENV PYTHONUNBUFFERED 1
 ENV PYTHONFAULTHANDLER 1
 ENV PYTHONHASHSEED random
-RUN poetry install --no-dev --no-interaction --no-ansi    \
+RUN poetry install --only main --no-interaction --no-ansi \
     && rm -rf ~/.cache
 
 # 4. Expose the required ports

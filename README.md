@@ -43,6 +43,9 @@ The project consists of three main components:
 docker build -t yaraku/human-evaluation-tool .
 ```
 
+> **Note:** The Docker build installs Poetry versions that satisfy `>=1.5,<1.7` by default. You can override the constraint with
+> `--build-arg POETRY_VERSION_CONSTRAINT="==1.6.1"` if you need to pin an exact release.
+
 2. Run the container:
 ```sh
 docker run --rm -it -p 8000:8000 yaraku/human-evaluation-tool
@@ -71,7 +74,7 @@ sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 ```sh
 cd backend
 
-# Install dependencies
+# Install dependencies (Poetry 1.5.x - 1.6.x)
 poetry install
 
 # Create and configure .env file
