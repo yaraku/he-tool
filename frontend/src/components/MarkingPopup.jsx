@@ -24,6 +24,21 @@ import { useEffect, useState } from "react";
 import ErrorCategorySelector from "./ErrorCategorySelector";
 import ErrorSeveritySelector from "./ErrorSeveritySelector";
 
+/**
+ * A popup component for creating and editing error markings in translations.
+ * 
+ * @param {Object} props - Component props
+ * @param {React.RefObject} props.containerRef - Reference to the container element for positioning
+ * @param {Object|null} props.marking - The marking being edited, or null when creating a new marking
+ * @param {Selection} props.selection - The current text selection when creating a new marking
+ * @param {boolean} props.disabled - Whether the marking controls are disabled
+ * @param {number} props.mouseX - Mouse X coordinate for popup positioning
+ * @param {number} props.mouseY - Mouse Y coordinate for popup positioning
+ * @param {Function} props.createMarking - Callback for creating a new marking
+ * @param {Function} props.deleteMarking - Callback for deleting an existing marking
+ * @param {Function} props.updateMarking - Callback for updating an existing marking
+ * @returns {JSX.Element} The marking popup component
+ */
 export default function MarkingPopup({
   containerRef,
   marking,

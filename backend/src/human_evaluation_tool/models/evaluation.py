@@ -23,6 +23,17 @@ from .. import db
 
 
 class Evaluation(db.Model):
+    """
+    Represents an evaluation project in the system.
+
+    Attributes:
+        id (int): Primary key for the evaluation
+        name (str): Unique name of the evaluation project (max 120 chars)
+        type (str): Type of evaluation (e.g., 'error-marking', 'ranking') (max 20 chars)
+        isFinished (bool): Whether the evaluation is complete
+        createdAt (datetime): When the evaluation was created
+        updatedAt (datetime): When the evaluation was last updated
+    """
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(20), nullable=False)
@@ -31,6 +42,12 @@ class Evaluation(db.Model):
     updatedAt = db.Column(db.DateTime, nullable=False)
 
     def to_dict(self):
+        """
+        Converts the evaluation object to a dictionary for JSON serialization.
+
+        Returns:
+            dict: Dictionary representation of the evaluation with all its fields
+        """
         return {
             "id": self.id,
             "name": self.name,
