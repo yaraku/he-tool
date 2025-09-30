@@ -22,13 +22,13 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-hot-toast";
 
-import { useAnnotationMarkings } from "./useAnnotationMarkings";
-import { useAnnotationSystems } from "./useAnnotationSystems";
-import { useDocumentBitexts } from "./useDocumentBitexts";
-import { updateAnnotation as updateAnnotationApi } from "../../services/apiAnnotations";
 import Marking from "../../components/Marking";
 import Spinner from "../../components/Spinner";
 import SpinnerMini from "../../components/SpinnerMini";
+import { updateAnnotation as updateAnnotationApi } from "../../services/apiAnnotations";
+import { useAnnotationMarkings } from "./useAnnotationMarkings";
+import { useAnnotationSystems } from "./useAnnotationSystems";
+import { useDocumentBitexts } from "./useDocumentBitexts";
 
 export default function AnnotateInstance({
   containerRef,
@@ -156,7 +156,9 @@ export default function AnnotateInstance({
             <div className="card tw-mb-4">
               <div className="card-header">Reference</div>
               <div className="card-body">
-                <p>{annotation["bitext"]["target"]}</p>
+                <p className="tw-whitespace-pre-wrap">
+                  {annotation["bitext"]["target"]}
+                </p>
               </div>
             </div>
             {documentBitexts.length > 1 ? (
@@ -172,16 +174,24 @@ export default function AnnotateInstance({
                       if (bitext["id"] === annotation["bitext"]["id"]) {
                         return (
                           <tr className="tw-border-b tw-border-t tw-border-solid tw-bg-green-100">
-                            <td className="tw-py-4">{bitext["source"]}</td>
-                            <td className="tw-py-4">{bitext["target"]}</td>
+                            <td className="tw-whitespace-pre-wrap tw-py-4">
+                              {bitext["source"]}
+                            </td>
+                            <td className="tw-whitespace-pre-wrap tw-py-4">
+                              {bitext["target"]}
+                            </td>
                           </tr>
                         );
                       }
 
                       return (
                         <tr className="tw-border-b tw-border-t tw-border-solid">
-                          <td className="tw-py-4">{bitext["source"]}</td>
-                          <td className="tw-py-4">{bitext["target"]}</td>
+                          <td className="tw-whitespace-pre-wrap tw-py-4">
+                            {bitext["source"]}
+                          </td>
+                          <td className="tw-whitespace-pre-wrap tw-py-4">
+                            {bitext["target"]}
+                          </td>
                         </tr>
                       );
                     })}

@@ -19,17 +19,17 @@
  * Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
  */
 
-import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
 import { toast } from "react-hot-toast";
 
-import ClickOutsideListener from "./ClickOutsideListener";
-import MarkingPopup from "./MarkingPopup";
 import {
   useCreateAnnotationMarking,
   useDeleteAnnotationMarking,
   useUpdateAnnotationMarking,
 } from "../features/annotations/useAnnotationMarkings";
+import ClickOutsideListener from "./ClickOutsideListener";
+import MarkingPopup from "./MarkingPopup";
 
 export default function MarkingItem({
   containerRef,
@@ -236,7 +236,7 @@ export default function MarkingItem({
   }
 
   return (
-    <div className="col-sm-10 markingText tw-select-text">
+    <div className="col-sm-10 markingText tw-select-text tw-whitespace-pre-wrap">
       {text.split(" ").map((word, wordIndex) => {
         return (
           <span
