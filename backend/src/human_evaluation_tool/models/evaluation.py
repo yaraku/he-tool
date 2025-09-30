@@ -34,6 +34,7 @@ class Evaluation(db.Model):
         createdAt (datetime): When the evaluation was created
         updatedAt (datetime): When the evaluation was last updated
     """
+
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(120), unique=True, nullable=False)
     type = db.Column(db.String(20), nullable=False)
