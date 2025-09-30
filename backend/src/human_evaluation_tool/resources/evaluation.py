@@ -19,22 +19,11 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-import csv
-import io
-
 from datetime import datetime
 
 from .. import app, db
-from ..models import (
-    Annotation,
-    AnnotationSystem,
-    Bitext,
-    Document,
-    Evaluation,
-    Marking,
-    System,
-    User,
-)
+from ..models import Annotation, AnnotationSystem, Bitext, Document, \
+    Evaluation, Marking, System, User
 from ..utils import CATEGORY_NAME, SEVERITY_NAME
 from flask import jsonify, request
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -75,7 +64,7 @@ def create_evaluation():
             type=data["type"],
             isFinished=data.get("isFinished", False),
             createdAt=datetime.now(),
-            updatedAt=datetime.now(),
+            updatedAt=datetime.now()
         )
         db.session.add(evaluation)
         db.session.commit()
@@ -109,11 +98,9 @@ def read_evaluation_annotations(id):
     if not evaluation:
         return {"message": "Evaluation not found"}, 404
 
-    annotations = (
-        db.session.query(Annotation)
-        .filter_by(userId=get_jwt_identity(), evaluationId=id)
+    annotations = db.session.query(Annotation)\
+        .filter_by(userId=get_jwt_identity(), evaluationId=id)\
         .all()
-    )
 
     return jsonify([a.to_dict() for a in annotations]), 200
 
@@ -127,19 +114,21 @@ def read_evaluation_results(id):
     if not db.session.query(Evaluation).get(id):
         return {"message": "Evaluation not found"}, 404
 
-    annotations = db.session.query(Annotation).filter_by(evaluationId=id).all()
+    annotations = db.session.query(Annotation)\
+        .filter_by(evaluationId=id)\
+        .all()
 
     results = []
     for annotation in annotations:
         bitext = db.session.query(Bitext).get(annotation.bitextId)
         user = db.session.query(User).get(annotation.userId)
         document = db.session.query(Document).get(bitext.documentId)
-        markings = db.session.query(Marking).filter_by(annotationId=annotation.id).all()
+        markings = db.session.query(Marking)\
+            .filter_by(annotationId=annotation.id)\
+            .all()
 
         for marking in markings:
             row = []
-            row_str = io.StringIO()
-            writer = csv.writer(row_str, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
             # Get required information for building the row
             annotation_system = db.session.query(AnnotationSystem)\
@@ -156,29 +145,26 @@ def read_evaluation_results(id):
             row.append(user.email.split("@")[0])
 
             if marking.isSource:
-                source = bitext.source.split(" ")
+                source = bitext.source.split(" ").replace("\n", "<NEWLINE>")
                 source.insert(marking.errorStart, "<v>")
                 source.insert(marking.errorEnd + 2, "</v>")
 
                 row.append(" ".join(source))
-                row.append(annotation_system.translation)
+                row.append(annotation_system.translation.replace("\n", "<NEWLINE>"))
             else:
-                translation = annotation_system.translation.split(" ")
+                translation = annotation_system.translation.split(" ").replace("\n", "<NEWLINE>")
                 translation.insert(marking.errorStart, "<v>")
                 translation.insert(marking.errorEnd + 2, "</v>")
 
-                row.append(bitext.source)
+                row.append(bitext.source.replace("\n", "<NEWLINE>"))
                 row.append(" ".join(translation))
 
             row.append(CATEGORY_NAME[marking.errorCategory])
             row.append(SEVERITY_NAME[marking.errorSeverity])
             row.append(annotation.comment)
 
-            # Write the row using the CSV writer
-            writer.writerow(row)
-
             # Add the row to the results
-            results.append(row_str.getvalue())
+            results.append("\t".join(row) + "\n")
 
     return jsonify(results), 200
 
@@ -201,11 +187,10 @@ def update_evaluation(id):
         return {"message": "Missing required field"}, 422
 
     # Check if an evaluation with the same name already exists
-    if (
-        db.session.query(Evaluation)
-        .filter(Evaluation.id != id, Evaluation.name == data["name"])
-        .first()
-    ):
+    if db.session.query(Evaluation).filter(
+            Evaluation.id != id,
+            Evaluation.name == data["name"]
+    ).first():
         return {"message": "Evaluation already exists"}, 409
 
     try:
