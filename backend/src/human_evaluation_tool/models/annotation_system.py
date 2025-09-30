@@ -35,7 +35,7 @@ class AnnotationSystem(db.Model):
             "id": self.id,
             "annotationId": self.annotationId,
             "systemId": self.systemId,
-            "translation": self.translation,
+            "translation": self.translation.encode().decode('unicode_escape'),
             "createdAt": self.createdAt,
             "updatedAt": self.updatedAt,
         }
