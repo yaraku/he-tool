@@ -152,18 +152,18 @@ def read_evaluation_results(id):
             row.append(user.email.split("@")[0])
 
             if marking.isSource:
-                source = bitext.source.split(" ")
+                source = bitext.source.replace("\\n", "\n").split(" ")
                 source.insert(marking.errorStart, "<v>")
                 source.insert(marking.errorEnd + 2, "</v>")
 
                 row.append(" ".join(source))
-                row.append(annotation_system.translation)
+                row.append(annotation_system.translation.replace("\\n", "\n"))
             else:
-                translation = annotation_system.translation.split(" ")
+                translation = annotation_system.translation.replace("\\n", "\n").split(" ")
                 translation.insert(marking.errorStart, "<v>")
                 translation.insert(marking.errorEnd + 2, "</v>")
 
-                row.append(bitext.source)
+                row.append(bitext.source.replace("\\n", "\n"))
                 row.append(" ".join(translation))
 
             row.append(CATEGORY_NAME[marking.errorCategory])
