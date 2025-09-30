@@ -19,6 +19,9 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
+import csv
+import io
+
 from datetime import datetime
 
 from .. import app, db
@@ -135,13 +138,14 @@ def read_evaluation_results(id):
 
         for marking in markings:
             row = []
+            row_str = io.StringIO()
+            writer = csv.writer(row_str, delimiter="\t", quoting=csv.QUOTE_NONNUMERIC)
 
             # Get required information for building the row
-            annotation_system = (
-                db.session.query(AnnotationSystem)
-                .filter_by(annotationId=annotation.id, systemId=marking.systemId)
+            annotation_system = db.session.query(AnnotationSystem)\
+                .filter_by(annotationId=annotation.id,
+                           systemId=marking.systemId)\
                 .first()
-            )
             system = db.session.query(System).get(marking.systemId)
 
             # Add marking information to the row
@@ -152,26 +156,29 @@ def read_evaluation_results(id):
             row.append(user.email.split("@")[0])
 
             if marking.isSource:
-                source = bitext.source.replace("\\n", "\n").split(" ")
+                source = bitext.source.split(" ")
                 source.insert(marking.errorStart, "<v>")
                 source.insert(marking.errorEnd + 2, "</v>")
 
                 row.append(" ".join(source))
-                row.append(annotation_system.translation.replace("\\n", "\n"))
+                row.append(annotation_system.translation)
             else:
-                translation = annotation_system.translation.replace("\\n", "\n").split(" ")
+                translation = annotation_system.translation.split(" ")
                 translation.insert(marking.errorStart, "<v>")
                 translation.insert(marking.errorEnd + 2, "</v>")
 
-                row.append(bitext.source.replace("\\n", "\n"))
+                row.append(bitext.source)
                 row.append(" ".join(translation))
 
             row.append(CATEGORY_NAME[marking.errorCategory])
             row.append(SEVERITY_NAME[marking.errorSeverity])
             row.append(annotation.comment)
 
+            # Write the row using the CSV writer
+            writer.writerow(row)
+
             # Add the row to the results
-            results.append("\t".join(row))
+            results.append(row_str.getvalue())
 
     return jsonify(results), 200
 

@@ -34,8 +34,8 @@ class Bitext(db.Model):
         return {
             "id": self.id,
             "documentId": self.documentId,
-            "source": self.source.replace("\\n", "\n"),
-            "target": self.target.replace("\\n", "\n"),
+            "source": self.source,
+            "target": self.target,
             "createdAt": self.createdAt,
             "updatedAt": self.updatedAt,
         }
