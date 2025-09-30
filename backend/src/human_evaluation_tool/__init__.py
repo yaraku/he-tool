@@ -37,6 +37,7 @@ load_dotenv()
 # Initialize Flask app
 app = Flask(__name__, static_folder="../../../public")
 app.config.from_file("../../flask.config.json", load=json.load)
+app.config["JWT_SECRET_KEY"] = os.environ["JWT_SECRET_KEY"]
 app.json.sort_keys = False
 
 # Set the database URI from the environment variables

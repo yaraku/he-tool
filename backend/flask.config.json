@@ -3,7 +3,8 @@
   "JWT_COOKIE_SAMESITE": "Strict",
   "JWT_COOKIE_SECURE": false,
   "JWT_CSRF_IN_COOKIES": true,
-  "JWT_SECRET_KEY": "",
   "JWT_SESSION_COOKIE": false,
-  "JWT_TOKEN_LOCATION": ["cookies"]
+  "JWT_TOKEN_LOCATION": [
+    "cookies"
+  ]
 }
