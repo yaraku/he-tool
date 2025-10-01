@@ -1,34 +1,36 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""System model."""
 
-This file is part of Human Evaluation Tool.
+from __future__ import annotations
 
-Human Evaluation Tool is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
+from datetime import datetime
+from typing import Any, TYPE_CHECKING
 
-Human Evaluation Tool is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-You should have received a copy of the GNU General Public License along with
-Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+from .. import Base
 
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
-"""
-
-from .. import db
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .annotation_system import AnnotationSystem
+    from .marking import Marking
 
 
-class System(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), unique=True, nullable=False)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+class System(Base):
+    __tablename__ = "system"
 
-    def to_dict(self):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    annotation_systems: Mapped[list["AnnotationSystem"]] = relationship(
+        "AnnotationSystem", back_populates="system", cascade="all, delete-orphan"
+    )
+    markings: Mapped[list["Marking"]] = relationship(
+        "Marking", back_populates="system", cascade="all, delete-orphan"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,

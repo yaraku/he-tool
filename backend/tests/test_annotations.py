@@ -199,6 +199,16 @@ def test_annotation_delete_not_found(auth_client):
     assert response.status_code == 404
 
 
+def test_read_annotations_missing_identity(auth_client, monkeypatch):
+    client, _ = auth_client
+
+    monkeypatch.setattr(
+        "human_evaluation_tool.resources.annotation.get_jwt_identity", lambda: None
+    )
+    response = _request(client, "get", "/api/annotations")
+    assert response.status_code == 401
+
+
 def test_annotation_create_database_error(
     auth_client, create_evaluation, create_bitext, monkeypatch
 ):

@@ -13,7 +13,7 @@ os.environ.setdefault("DB_PORT", "5432")
 os.environ.setdefault("DB_USER", "testuser")
 os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 
-from human_evaluation_tool import app as flask_app, bcrypt, db  # noqa: E402
+from human_evaluation_tool import bcrypt, create_app, db  # noqa: E402
 from human_evaluation_tool.models import (  # noqa: E402
     Annotation,
     AnnotationSystem,
@@ -26,28 +26,28 @@ from human_evaluation_tool.models import (  # noqa: E402
 )
 
 
-flask_app.config.update(
-    TESTING=True,
-    SQLALCHEMY_DATABASE_URI="sqlite://",
-    SQLALCHEMY_ENGINE_OPTIONS={
-        "connect_args": {"check_same_thread": False},
-        "poolclass": StaticPool,
-    },
-    JWT_COOKIE_CSRF_PROTECT=False,
-)
-with flask_app.app_context():
-    db.session.remove()
-    db.engine.dispose()
-
-
 def _now() -> datetime:
     return datetime(2023, 1, 1, 12, 0, 0)
 
 
 @pytest.fixture(scope="session")
 def app():
-    with flask_app.app_context():
-        yield flask_app
+    app = create_app(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_ENGINE_OPTIONS": {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": StaticPool,
+            },
+            "JWT_COOKIE_CSRF_PROTECT": False,
+        }
+    )
+
+    with app.app_context():
+        db.session.remove()
+        db.engine.dispose()
+        yield app
 
 
 @pytest.fixture(autouse=True)

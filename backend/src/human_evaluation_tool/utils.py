@@ -1,26 +1,10 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Shared utility constants for the Human Evaluation Tool backend."""
 
-This file is part of Human Evaluation Tool.
+from __future__ import annotations
 
-Human Evaluation Tool is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
+from typing import Final
 
-Human Evaluation Tool is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
-
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, September 2023
-"""
-
-# Define a conversion table for category names
-CATEGORY_NAME = {
+CATEGORY_NAME: Final[dict[str, str]] = {
     "000": "no-error",
     "A01": "Accuracy/Mistranslation",
     "A02": "Accuracy/PositiveNegative",
@@ -53,8 +37,7 @@ CATEGORY_NAME = {
     "SE1": "SourceError",
 }
 
-# Define a conversion table for severity names
-SEVERITY_NAME = {
+SEVERITY_NAME: Final[dict[str, str]] = {
     "no-error": "no-error",
     "critical": "Critical",
     "minor": "Minor",

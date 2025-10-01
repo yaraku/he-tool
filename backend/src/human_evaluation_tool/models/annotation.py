@@ -1,46 +1,53 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Annotation model."""
 
-This file is part of Human Evaluation Tool.
+from __future__ import annotations
 
-Human Evaluation Tool is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
+from datetime import datetime
+from typing import Any, TYPE_CHECKING
 
-Human Evaluation Tool is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
+from sqlalchemy import Boolean, DateTime, ForeignKey, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-You should have received a copy of the GNU General Public License along with
-Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+from .. import Base
 
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
-"""
-
-from .. import db
-
-from .bitext import Bitext
-from .evaluation import Evaluation
+if TYPE_CHECKING:  # pragma: no cover
+    from .annotation_system import AnnotationSystem
+    from .bitext import Bitext
+    from .evaluation import Evaluation
+    from .marking import Marking
+    from .user import User
 
 
-class Annotation(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    userId = db.Column(db.Integer, db.ForeignKey("user.id"), nullable=False)
-    evaluationId = db.Column(db.Integer, db.ForeignKey("evaluation.id"), nullable=False)
-    bitextId = db.Column(db.Integer, db.ForeignKey("bitext.id"), nullable=False)
-    isAnnotated = db.Column(db.Boolean, nullable=False, default=False)
-    comment = db.Column(db.Text, nullable=True)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+class Annotation(Base):
+    __tablename__ = "annotation"
 
-    def to_dict(self):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    userId: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
+    evaluationId: Mapped[int] = mapped_column(ForeignKey("evaluation.id"), nullable=False)
+    bitextId: Mapped[int] = mapped_column(ForeignKey("bitext.id"), nullable=False)
+    isAnnotated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    comment: Mapped[str | None] = mapped_column(Text)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    user: Mapped["User"] = relationship("User", back_populates="annotations")
+    evaluation: Mapped["Evaluation"] = relationship(
+        "Evaluation", back_populates="annotations"
+    )
+    bitext: Mapped["Bitext"] = relationship("Bitext", back_populates="annotations")
+    annotation_systems: Mapped[list["AnnotationSystem"]] = relationship(
+        "AnnotationSystem", back_populates="annotation", cascade="all, delete-orphan"
+    )
+    markings: Mapped[list["Marking"]] = relationship(
+        "Marking", back_populates="annotation", cascade="all, delete-orphan"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "userId": self.userId,
-            "evaluation": Evaluation.query.get(self.evaluationId).to_dict(),
-            "bitext": Bitext.query.get(self.bitextId).to_dict(),
+            "evaluation": self.evaluation.to_dict(),
+            "bitext": self.bitext.to_dict(),
             "isAnnotated": self.isAnnotated,
             "comment": self.comment,
             "createdAt": self.createdAt,
