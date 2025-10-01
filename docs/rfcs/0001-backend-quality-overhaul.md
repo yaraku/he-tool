@@ -124,5 +124,4 @@ Implementation will proceed in stages:
 * Mermaid docs: <https://mermaid.js.org/> (for ER, sequence, and class diagrams).
 * Flask testing patterns: <https://flask.palletsprojects.com/en/latest/testing/>.
 * SQLAlchemy typing guide: <https://docs.sqlalchemy.org/en/20/orm/declarative_tables.html#using-typing-annotations>.
-* `flask-jwt-extended` testing guidance: <https://flask-jwt-extended.readthedocs.io/en/stable/tokens_in_cookies/#testing>.
 * Will ensure compatibility with existing tooling (Poetry) and align dependency versions accordingly.
