@@ -55,9 +55,8 @@ The initiative is broken down into the following deliverables:
    * Ensure `mypy --strict` passes against the backend package and tests (if practical) without suppressions beyond targeted `# type: ignore[... ]` justified in comments.
 
 4. **Project Tooling Updates**
-   * Update `pyproject.toml` to register new dev dependencies (`pytest`, `coverage`, `pytest-cov` if used, `mypy`) and configure pytest/coverage (e.g., `[tool.pytest.ini_options]`, `[tool.coverage.run]` sections).
-   * Update `backend/poetry.lock` to remain consistent.
-   * Provide `Makefile`/task runner snippets if existing workflows need augmentation (only if necessary to simplify commands).
+  * Update `pyproject.toml` to register new dev dependencies (`pytest`, `coverage`, `pytest-cov` if used, `mypy`) and configure pytest/coverage (e.g., `[tool.pytest.ini_options]`, `[tool.coverage.run]` sections).
+  * Update `backend/poetry.lock` to remain consistent.
 
 # The How
 
@@ -125,5 +124,5 @@ Implementation will proceed in stages:
 * Mermaid docs: <https://mermaid.js.org/> (for ER, sequence, and class diagrams).
 * Flask testing patterns: <https://flask.palletsprojects.com/en/latest/testing/>.
 * SQLAlchemy typing guide: <https://docs.sqlalchemy.org/en/20/orm/declarative_tables.html#using-typing-annotations>.
-* `flask-jwt-extended` testing helpers: <https://flask-jwt-extended.readthedocs.io/en/stable/testing/>.
+* `flask-jwt-extended` testing guidance: <https://flask-jwt-extended.readthedocs.io/en/stable/tokens_in_cookies/#testing>.
 * Will ensure compatibility with existing tooling (Poetry) and align dependency versions accordingly.
