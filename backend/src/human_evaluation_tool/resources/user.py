@@ -1,146 +1,129 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""User CRUD endpoints."""
 
-This file is part of Human Evaluation Tool.
-
-Human Evaluation Tool is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
-
-Human Evaluation Tool is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License along with
-Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
-
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
-"""
+from __future__ import annotations
 
 from datetime import datetime
 
-from .. import app, bcrypt, db
-from ..models import User
-from flask import jsonify, request
+from flask import Blueprint, jsonify, request
+from flask.typing import ResponseReturnValue
 from flask_jwt_extended import jwt_required
+from sqlalchemy import Select, select
 from sqlalchemy.exc import SQLAlchemyError
 
+from .. import bcrypt, db
+from ..models import User
 
-@app.route("/api/users", methods=["GET"])
+bp = Blueprint("users", __name__)
+
+
+def _current_time() -> datetime:
+    return datetime.now()
+
+
+def _select_all_users() -> Select[tuple[User]]:
+    return select(User)
+
+
+@bp.get("/api/users")
 @jwt_required()
-def read_users():
-    """
-    Reads all users.
-    """
-    users = db.session.query(User).all()
-    return jsonify([u.to_dict() for u in users]), 200
+def read_users() -> ResponseReturnValue:
+    """Return all users."""
+
+    users = db.session.execute(_select_all_users()).scalars().all()
+    return jsonify([user.to_dict() for user in users]), 200
 
 
-@app.route("/api/users", methods=["POST"])
+@bp.post("/api/users")
 @jwt_required()
-def create_user():
-    """
-    Creates a new user.
-    """
-    data = request.get_json()
+def create_user() -> ResponseReturnValue:
+    """Create a new user."""
 
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     required_fields = ["email", "password", "nativeLanguage"]
     if any(field not in data for field in required_fields):
         return {"message": "Missing required field"}, 422
 
-    # Check if a user with the same email already exists
-    if db.session.query(User).filter_by(email=data["email"]).first():
+    existing = db.session.execute(
+        select(User).filter_by(email=data["email"])
+    ).scalar_one_or_none()
+    if existing is not None:
         return {"message": "User already exists"}, 409
 
     try:
-        # Create the user and save it to the database
+        now = _current_time()
         user = User(
             email=data["email"],
             password=bcrypt.generate_password_hash(data["password"]).decode("utf-8"),
             nativeLanguage=data["nativeLanguage"],
-            createdAt=datetime.now(),
-            updatedAt=datetime.now(),
+            createdAt=now,
+            updatedAt=now,
         )
         db.session.add(user)
         db.session.commit()
-
         return {"user": user.to_dict()}, 201
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/users/<int:id>", methods=["GET"])
+@bp.get("/api/users/<int:user_id>")
 @jwt_required()
-def read_user(id):
-    """
-    Reads a specific user.
-    """
-    user = db.session.query(User).get(id)
-    if not user:
-        return {"message": "User not found"}, 404
+def read_user(user_id: int) -> ResponseReturnValue:
+    """Return a specific user."""
 
+    user = db.session.get(User, user_id)
+    if user is None:
+        return {"message": "User not found"}, 404
     return jsonify(user.to_dict()), 200
 
 
-@app.route("/api/users/<int:id>", methods=["PUT"])
+@bp.put("/api/users/<int:user_id>")
 @jwt_required()
-def update_user(id):
-    """
-    Updates a specific user.
-    """
-    user = db.session.query(User).get(id)
-    if not user:
+def update_user(user_id: int) -> ResponseReturnValue:
+    """Update the details of a user."""
+
+    user = db.session.get(User, user_id)
+    if user is None:
         return {"message": "User not found"}, 404
 
-    data = request.get_json()
-
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     required_fields = ["email", "password", "nativeLanguage"]
     if any(field not in data for field in required_fields):
         return {"message": "Missing required field"}, 422
 
-    # Check if a user with the requested email already exists
-    if (
-        db.session.query(User)
-        .filter(User.id != id, User.email == data["email"])
-        .first()
-    ):
+    conflict = db.session.execute(
+        select(User).filter(User.id != user_id, User.email == data["email"])
+    ).scalar_one_or_none()
+    if conflict is not None:
         return {"message": "User already exists"}, 409
 
     try:
-        # Update the user and save it to the database
         user.email = data["email"]
         user.password = bcrypt.generate_password_hash(data["password"]).decode("utf-8")
         user.nativeLanguage = data["nativeLanguage"]
-        user.updatedAt = datetime.now()
+        user.updatedAt = _current_time()
         db.session.commit()
-
         return {"user": user.to_dict()}, 200
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/users/<int:id>", methods=["DELETE"])
+@bp.delete("/api/users/<int:user_id>")
 @jwt_required()
-def delete_user(id):
-    """
-    Deletes a specific user.
-    """
-    user = db.session.query(User).get(id)
-    if not user:
+def delete_user(user_id: int) -> ResponseReturnValue:
+    """Delete a user."""
+
+    user = db.session.get(User, user_id)
+    if user is None:
         return {"message": "User not found"}, 404
 
     try:
-        # Delete the user from the database
         db.session.delete(user)
         db.session.commit()
-
         return jsonify({}), 204
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
+
+

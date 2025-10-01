@@ -1,36 +1,36 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Bitext model."""
 
-This file is part of Human Evaluation Tool.
+from __future__ import annotations
 
-Human Evaluation Tool is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by the
-Free Software Foundation, either version 3 of the License,
-or (at your option) any later version.
+from datetime import datetime
+from typing import Any, TYPE_CHECKING
 
-Human Evaluation Tool is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-or FITNESS FOR A PARTICULAR PURPOSE.
-See the GNU General Public License for more details.
+from sqlalchemy import DateTime, ForeignKey, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-You should have received a copy of the GNU General Public License along with
-Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+from .. import Base
 
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
-"""
-
-from .. import db
+if TYPE_CHECKING:  # pragma: no cover
+    from .annotation import Annotation
+    from .document import Document
 
 
-class Bitext(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    documentId = db.Column(db.Integer, db.ForeignKey("document.id"), nullable=False)
-    source = db.Column(db.Text, nullable=False)
-    target = db.Column(db.Text, nullable=True)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+class Bitext(Base):
+    __tablename__ = "bitext"
 
-    def to_dict(self):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    documentId: Mapped[int] = mapped_column(ForeignKey("document.id"), nullable=False)
+    source: Mapped[str] = mapped_column(Text, nullable=False)
+    target: Mapped[str | None] = mapped_column(Text)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    document: Mapped["Document"] = relationship("Document", back_populates="bitexts")
+    annotations: Mapped[list["Annotation"]] = relationship(
+        "Annotation", back_populates="bitext", cascade="all, delete-orphan"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "documentId": self.documentId,
