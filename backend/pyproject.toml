@@ -7,15 +7,18 @@ license = "GPL-3.0-or-later"
 readme = "README.md"
 
 [tool.poetry.dependencies]
+bcrypt = "~4.1"
 flask = "~2.3"
 flask-bcrypt = "~1.0"
-flask-jwt-extended = "~4.5"
+flask-jwt-extended = "~4.6"
 flask-migrate = "~4.0"
-flask-sqlalchemy = "~3.0"
+flask-sqlalchemy = "~3.1"
 gunicorn = "~21.2"
 psycopg2 = "~2.9"
+pyjwt = "~2.8"
 python = ">=3.10,<4.0"
 python-dotenv = "~1.0"
+werkzeug = "~3.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "~23.11"
