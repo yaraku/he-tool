@@ -203,7 +203,11 @@ def read_annotation_system(a_id, s_id):
     """
     Reads a specific system of an annotation.
     """
-    system = db.session.query(AnnotationSystem).get((a_id, s_id))
+    system = (
+        db.session.query(AnnotationSystem)
+        .filter_by(annotationId=a_id, systemId=s_id)
+        .first()
+    )
     if not system:
         return {"message": "System not found"}, 404
 
@@ -216,7 +220,11 @@ def update_annotation_system(a_id, s_id):
     """
     Updates a specific system of an annotation.
     """
-    system = db.session.query(AnnotationSystem).get((a_id, s_id))
+    system = (
+        db.session.query(AnnotationSystem)
+        .filter_by(annotationId=a_id, systemId=s_id)
+        .first()
+    )
     if not system:
         return {"message": "System not found"}, 404
 
@@ -244,7 +252,11 @@ def delete_annotation_system(a_id, s_id):
     """
     Deletes a specific system of an annotation.
     """
-    system = db.session.query(AnnotationSystem).get((a_id, s_id))
+    system = (
+        db.session.query(AnnotationSystem)
+        .filter_by(annotationId=a_id, systemId=s_id)
+        .first()
+    )
     if not system:
         return {"message": "System not found"}, 404
 
