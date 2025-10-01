@@ -41,12 +41,15 @@ app.config["JWT_SECRET_KEY"] = os.environ["JWT_SECRET_KEY"]
 app.json.sort_keys = False
 
 # Set the database URI from the environment variables
-required_variables = ["DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER"]
-if any(field not in os.environ for field in required_variables):
-    raise RuntimeError("Missing required database environment variables")
-app.config[
-    "SQLALCHEMY_DATABASE_URI"
-] = f"postgresql://{os.environ['DB_USER']}:{quote_plus(os.environ['DB_PASSWORD'])}@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
+if "SQLALCHEMY_DATABASE_URI" in os.environ:
+    app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["SQLALCHEMY_DATABASE_URI"]
+else:
+    required_variables = ["DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER"]
+    if any(field not in os.environ for field in required_variables):
+        raise RuntimeError("Missing required database environment variables")
+    app.config[
+        "SQLALCHEMY_DATABASE_URI"
+    ] = f"postgresql://{os.environ['DB_USER']}:{quote_plus(os.environ['DB_PASSWORD'])}@{os.environ['DB_HOST']}:{os.environ['DB_PORT']}/{os.environ['DB_NAME']}"
 
 # Initialize Flask extensions
 db = SQLAlchemy(app)
