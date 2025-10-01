@@ -20,13 +20,6 @@
  */
 
 export async function getDocuments() {
-  return [
-    {
-      id: 1,
-      name: "Sample Document",
-    },
-  ];
-
   const response = await fetch("/api/documents", {
     method: "GET",
     credentials: "include",
@@ -40,27 +33,6 @@ export async function getDocuments() {
 }
 
 export async function getDocumentBitexts({ id }) {
-  return [
-    {
-      id: 1,
-      documentId: 1,
-      source: "My name is Giovanni Giacomo .",
-      target: "私 の 名前 は ジャコモ ジョバンニ です 。",
-    },
-    {
-      id: 2,
-      documentId: 1,
-      source: "My name is Vipul Mishra .",
-      target: "私 の 名前 は ビプル ミシュラ です 。",
-    },
-    {
-      id: 3,
-      documentId: 1,
-      source: "My name is Foo Bar .",
-      target: "私 の 名前 は フー バー です 。",
-    },
-  ];
-
   const response = await fetch(`/api/documents/${id}/bitexts`, {
     method: "GET",
     credentials: "include",

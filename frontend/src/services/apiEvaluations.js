@@ -20,19 +20,6 @@
  */
 
 export async function getEvaluations() {
-  return [
-    {
-      id: 1,
-      name: "ChatGPT Test Evaluation",
-      isFinished: false,
-    },
-    {
-      id: 2,
-      name: "Yet Another Evaluation",
-      isFinished: false,
-    },
-  ];
-
   const response = await fetch("/api/evaluations", {
     method: "GET",
     credentials: "include",
@@ -46,31 +33,6 @@ export async function getEvaluations() {
 }
 
 export async function getEvaluationAnnotations({ id }) {
-  // return [
-  //   {
-  //     id: 1,
-  //     evaluation: { id: 1, name: "ChatGPT Test Evaluation" },
-  //     bitext: {
-  //       id: 1,
-  //       documentId: 1,
-  //       source: "My name is Giovanni Giacomo .",
-  //       target: "私 の 名前 は ジャコモ ジョバンニ です 。",
-  //     },
-  //     isAnnotated: false,
-  //   },
-  //   {
-  //     id: 2,
-  //     evaluation: { id: 1, name: "ChatGPT Test Evaluation" },
-  //     bitext: {
-  //       id: 2,
-  //       documentId: 1,
-  //       source: "My name is Vipul Mishra .",
-  //       target: "私 の 名前 は ビプル ミシュラ です 。",
-  //     },
-  //     isAnnotated: true,
-  //   },
-  // ];
-
   const response = await fetch(`/api/evaluations/${id}/annotations`, {
     method: "GET",
     credentials: "include",

@@ -20,55 +20,6 @@
  */
 
 export async function getAnnotationSystems({ id }) {
-  if (id == 1) {
-    return [
-      {
-        id: 1,
-        annotationId: 1,
-        systemId: 1,
-        translation: "我が 名 は ジャコモ ジョバンニ で ある 。",
-      },
-      {
-        id: 2,
-        annotationId: 1,
-        systemId: 2,
-        translation: "私 は ジャコモ ジョバンニ と 申します 。",
-      },
-    ];
-  } else if (id == 2) {
-    return [
-      {
-        id: 3,
-        annotationId: 2,
-        systemId: 1,
-        translation: "我が 名 は ビプル ミシュラ で ある 。",
-      },
-      {
-        id: 4,
-        annotationId: 2,
-        systemId: 2,
-        translation: "私 は ビプル ミシュラ と 申します 。",
-      },
-    ];
-  } else if (id == 3) {
-    return [
-      {
-        id: 5,
-        annotationId: 3,
-        systemId: 1,
-        translation: "我が 名 は フー バー で ある 。",
-      },
-      {
-        id: 6,
-        annotationId: 3,
-        systemId: 2,
-        translation: "私 は フー バー と 申します 。",
-      },
-    ];
-  } else {
-    return [];
-  }
-
   const response = await fetch(`/api/annotations/${id}/systems`, {
     method: "GET",
     credentials: "include",

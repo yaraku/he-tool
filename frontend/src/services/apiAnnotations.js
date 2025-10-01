@@ -22,42 +22,6 @@
 import { getCookie } from "./utils";
 
 export async function getAnnotations() {
-  return [
-    {
-      id: 1,
-      evaluation: { name: "ChatGPT Test Evaluation" },
-      bitext: {
-        id: 1,
-        documentId: 1,
-        source: "My name is Giovanni Giacomo .",
-        target: "私 の 名前 は ジャコモ ジョバンニ です 。",
-      },
-      isAnnotated: false,
-    },
-    {
-      id: 2,
-      evaluation: { name: "ChatGPT Test Evaluation" },
-      bitext: {
-        id: 2,
-        documentId: 1,
-        source: "My name is Vipul Mishra .",
-        target: "私 の 名前 は ビプル ミシュラ です 。",
-      },
-      isAnnotated: true,
-    },
-    {
-      id: 3,
-      evaluation: { name: "ChatGPT Test Evaluation" },
-      bitext: {
-        id: 3,
-        documentId: 1,
-        source: "My name is Foo Bar .",
-        target: "私 の 名前 は フー バー です 。",
-      },
-      isAnnotated: false,
-    },
-  ];
-
   const response = await fetch("/api/annotations", {
     method: "GET",
     credentials: "include",

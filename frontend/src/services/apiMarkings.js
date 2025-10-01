@@ -22,33 +22,6 @@
 import { getCookie } from "./utils";
 
 export async function getAnnotationMarkings({ id }) {
-  if (id == 1) {
-    return [
-      {
-        id: 1,
-        annotationId: 1,
-        systemId: 1,
-        errorStart: 0,
-        errorEnd: 2,
-        errorCategory: "F01",
-        errorSeverity: "major",
-        isSource: false,
-      },
-      {
-        id: 2,
-        annotationId: 1,
-        systemId: 2,
-        errorStart: 2,
-        errorEnd: 3,
-        errorCategory: "A01",
-        errorSeverity: "critical",
-        isSource: false,
-      },
-    ];
-  } else {
-    return [];
-  }
-
   const response = await fetch(`/api/annotations/${id}/markings`, {
     method: "GET",
     credentials: "include",
