@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Copyright (C) 2023 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,16 +18,35 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from .. import db
+# Document model.
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, TYPE_CHECKING
+
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .. import Base
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .bitext import Bitext
 
 
-class Document(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), nullable=False)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+class Document(Base):
+    __tablename__ = "document"
 
-    def to_dict(self):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    bitexts: Mapped[list["Bitext"]] = relationship(
+        "Bitext", back_populates="document", cascade="all, delete-orphan"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,

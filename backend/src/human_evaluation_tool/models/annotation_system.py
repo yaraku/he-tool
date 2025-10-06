@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Copyright (C) 2023 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,18 +18,39 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from .. import db
+# Annotation-system mapping model.
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, TYPE_CHECKING
+
+from sqlalchemy import DateTime, ForeignKey, Text
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .. import Base
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .annotation import Annotation
+    from .system import System
 
 
-class AnnotationSystem(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    annotationId = db.Column(db.Integer, db.ForeignKey("annotation.id"), nullable=False)
-    systemId = db.Column(db.Integer, db.ForeignKey("system.id"), nullable=False)
-    translation = db.Column(db.Text, nullable=True)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+class AnnotationSystem(Base):
+    __tablename__ = "annotation_system"
 
-    def to_dict(self):
+    id: Mapped[int] = mapped_column(primary_key=True)
+    annotationId: Mapped[int] = mapped_column(ForeignKey("annotation.id"), nullable=False)
+    systemId: Mapped[int] = mapped_column(ForeignKey("system.id"), nullable=False)
+    translation: Mapped[str | None] = mapped_column(Text)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    annotation: Mapped["Annotation"] = relationship(
+        "Annotation", back_populates="annotation_systems"
+    )
+    system: Mapped["System"] = relationship("System", back_populates="annotation_systems")
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "annotationId": self.annotationId,

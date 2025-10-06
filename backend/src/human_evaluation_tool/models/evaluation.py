@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Copyright (C) 2023 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,36 +18,37 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from .. import db
+# Evaluation model.
+
+from __future__ import annotations
+
+from datetime import datetime
+from typing import Any, TYPE_CHECKING
+
+from sqlalchemy import Boolean, DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .. import Base
+
+if TYPE_CHECKING:  # pragma: no cover
+    from .annotation import Annotation
 
 
-class Evaluation(db.Model):
-    """
-    Represents an evaluation project in the system.
+class Evaluation(Base):
+    __tablename__ = "evaluation"
 
-    Attributes:
-        id (int): Primary key for the evaluation
-        name (str): Unique name of the evaluation project (max 120 chars)
-        type (str): Type of evaluation (e.g., 'error-marking', 'ranking') (max 20 chars)
-        isFinished (bool): Whether the evaluation is complete
-        createdAt (datetime): When the evaluation was created
-        updatedAt (datetime): When the evaluation was last updated
-    """
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(255), unique=True, nullable=False)
+    type: Mapped[str] = mapped_column(String(50), nullable=False)
+    isFinished: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
 
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), unique=True, nullable=False)
-    type = db.Column(db.String(20), nullable=False)
-    isFinished = db.Column(db.Boolean, nullable=False, default=False)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+    annotations: Mapped[list["Annotation"]] = relationship(
+        "Annotation", back_populates="evaluation", cascade="all, delete-orphan"
+    )
 
-    def to_dict(self):
-        """
-        Converts the evaluation object to a dictionary for JSON serialization.
-
-        Returns:
-            dict: Dictionary representation of the evaluation with all its fields
-        """
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,

@@ -1,3 +1,23 @@
+"""Copyright (C) 2023 Yaraku, Inc.
+
+This file is part of Human Evaluation Tool.
+
+Human Evaluation Tool is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Human Evaluation Tool is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
+"""
+
 from datetime import datetime
 
 from sqlalchemy.exc import SQLAlchemyError
@@ -77,6 +97,22 @@ def test_evaluation_annotations(auth_client, create_evaluation, create_annotatio
     assert len(data) == 1
 
 
+def test_evaluation_annotations_missing_identity(
+    auth_client, create_evaluation, create_annotation, create_bitext, monkeypatch
+):
+    client, user = auth_client
+    evaluation = create_evaluation(name="Missing Identity Eval")
+    bitext = create_bitext()
+    create_annotation(user=user, evaluation=evaluation, bitext=bitext)
+
+    monkeypatch.setattr(
+        "human_evaluation_tool.resources.evaluation.get_jwt_identity", lambda: None
+    )
+    response = _request(client, "get", f"/api/evaluations/{evaluation.id}/annotations")
+    assert response.status_code == 200
+    assert len(response.get_json()) == 1
+
+
 def test_evaluation_annotations_not_found(auth_client):
     client, _ = auth_client
     response = _request(client, "get", "/api/evaluations/999/annotations")
@@ -128,6 +164,81 @@ def test_evaluation_results_not_found(auth_client):
     client, _ = auth_client
     response = _request(client, "get", "/api/evaluations/999/results")
     assert response.status_code == 404
+
+
+def test_evaluation_results_skip_missing_bitext(
+    auth_client,
+    create_evaluation,
+    create_annotation,
+    create_marking,
+    create_system,
+    create_bitext,
+    monkeypatch,
+):
+    client, user = auth_client
+    evaluation = create_evaluation(name="Skip Bitext Eval")
+    bitext = create_bitext()
+    annotation = create_annotation(user=user, evaluation=evaluation, bitext=bitext)
+    create_marking(annotation=annotation, system=create_system())
+
+    original_get = db.session.get
+
+    def _fake_get(model, identity):
+        if model.__name__ == "Bitext":
+            return None
+        return original_get(model, identity)
+
+    monkeypatch.setattr(db.session, "get", _fake_get)
+    response = _request(client, "get", f"/api/evaluations/{evaluation.id}/results")
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+def test_evaluation_results_skip_missing_document(
+    auth_client,
+    create_evaluation,
+    create_annotation,
+    create_marking,
+    create_system,
+    create_bitext,
+    monkeypatch,
+):
+    client, user = auth_client
+    evaluation = create_evaluation(name="Skip Document Eval")
+    bitext = create_bitext()
+    annotation = create_annotation(user=user, evaluation=evaluation, bitext=bitext)
+    create_marking(annotation=annotation, system=create_system())
+
+    original_get = db.session.get
+
+    def _fake_get(model, identity):
+        if model.__name__ == "Document":
+            return None
+        return original_get(model, identity)
+
+    monkeypatch.setattr(db.session, "get", _fake_get)
+    response = _request(client, "get", f"/api/evaluations/{evaluation.id}/results")
+    assert response.status_code == 200
+    assert response.get_json() == []
+
+
+def test_evaluation_results_without_annotation_system(
+    auth_client,
+    create_evaluation,
+    create_annotation,
+    create_marking,
+    create_bitext,
+    create_system,
+):
+    client, user = auth_client
+    evaluation = create_evaluation(name="Missing Annotation System Eval")
+    bitext = create_bitext()
+    annotation = create_annotation(user=user, evaluation=evaluation, bitext=bitext)
+    create_marking(annotation=annotation, system=create_system())
+
+    response = _request(client, "get", f"/api/evaluations/{evaluation.id}/results")
+    assert response.status_code == 200
+    assert response.get_json() == []
 
 
 def test_evaluation_update_missing_field(auth_client, create_evaluation):

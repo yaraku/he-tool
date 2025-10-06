@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Copyright (C) 2023 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 

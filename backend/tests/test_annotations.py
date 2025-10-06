@@ -1,3 +1,23 @@
+"""Copyright (C) 2023 Yaraku, Inc.
+
+This file is part of Human Evaluation Tool.
+
+Human Evaluation Tool is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Human Evaluation Tool is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
+"""
+
 from sqlalchemy.exc import SQLAlchemyError
 
 from human_evaluation_tool import db
@@ -197,6 +217,16 @@ def test_annotation_delete_not_found(auth_client):
     client, _ = auth_client
     response = _request(client, "delete", "/api/annotations/999")
     assert response.status_code == 404
+
+
+def test_read_annotations_missing_identity(auth_client, monkeypatch):
+    client, _ = auth_client
+
+    monkeypatch.setattr(
+        "human_evaluation_tool.resources.annotation.get_jwt_identity", lambda: None
+    )
+    response = _request(client, "get", "/api/annotations")
+    assert response.status_code == 401
 
 
 def test_annotation_create_database_error(

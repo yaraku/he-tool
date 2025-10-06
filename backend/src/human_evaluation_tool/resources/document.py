@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Copyright (C) 2023 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,126 +18,121 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
+# Document endpoints.
+
+from __future__ import annotations
+
 from datetime import datetime
 
-from .. import app, db
-from ..models import Bitext, Document
-from flask import jsonify, request
+from flask import Blueprint, jsonify, request
+from flask.typing import ResponseReturnValue
 from flask_jwt_extended import jwt_required
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from .. import db
+from ..models import Bitext, Document
 
-@app.route("/api/documents", methods=["GET"])
+bp = Blueprint("documents", __name__)
+
+
+def _current_time() -> datetime:
+    return datetime.now()
+
+
+@bp.get("/api/documents")
 @jwt_required()
-def read_documents():
-    """
-    Reads all documents.
-    """
-    documents = db.session.query(Document).all()
-    return jsonify([d.to_dict() for d in documents]), 200
+def read_documents() -> ResponseReturnValue:
+    """Return all documents."""
+
+    documents = db.session.execute(select(Document)).scalars().all()
+    return jsonify([document.to_dict() for document in documents]), 200
 
 
-@app.route("/api/documents", methods=["POST"])
+@bp.post("/api/documents")
 @jwt_required()
-def create_document():
-    """
-    Creates a new document.
-    """
-    data = request.get_json()
+def create_document() -> ResponseReturnValue:
+    """Create a new document."""
 
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     if "name" not in data:
         return {"message": "Missing required field"}, 422
 
     try:
-        # Create the document and save it to the database
-        document = Document(
-            name=data["name"], createdAt=datetime.now(), updatedAt=datetime.now()
-        )
+        now = _current_time()
+        document = Document(name=data["name"], createdAt=now, updatedAt=now)
         db.session.add(document)
         db.session.commit()
-
         return jsonify(document.to_dict()), 201
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/documents/<int:id>", methods=["GET"])
+@bp.get("/api/documents/<int:document_id>")
 @jwt_required()
-def read_document(id):
-    """
-    Reads a document.
-    """
-    document = db.session.query(Document).get(id)
-    if not document:
-        return {"message": "Document not found"}, 404
+def read_document(document_id: int) -> ResponseReturnValue:
+    """Return a single document."""
 
+    document = db.session.get(Document, document_id)
+    if document is None:
+        return {"message": "Document not found"}, 404
     return jsonify(document.to_dict()), 200
 
 
-@app.route("/api/documents/<int:id>/bitexts", methods=["GET"])
+@bp.get("/api/documents/<int:document_id>/bitexts")
 @jwt_required()
-def read_document_bitexts(id):
-    """
-    Reads all bitexts for a document.
-    """
-    document = db.session.query(Document).get(id)
-    if not document:
+def read_document_bitexts(document_id: int) -> ResponseReturnValue:
+    """Return all bitexts for a document."""
+
+    if db.session.get(Document, document_id) is None:
         return {"message": "Document not found"}, 404
 
-    bitexts = db.session.query(Bitext).filter_by(documentId=id).all()
-    return jsonify([b.to_dict() for b in bitexts]), 200
+    bitexts = db.session.execute(
+        select(Bitext).filter_by(documentId=document_id)
+    ).scalars().all()
+    return jsonify([bitext.to_dict() for bitext in bitexts]), 200
 
 
-@app.route("/api/documents/<int:id>", methods=["PUT"])
+@bp.put("/api/documents/<int:document_id>")
 @jwt_required()
-def update_document(id):
-    """
-    Updates a document.
-    """
-    document = db.session.query(Document).get(id)
-    if not document:
+def update_document(document_id: int) -> ResponseReturnValue:
+    """Update a document."""
+
+    document = db.session.get(Document, document_id)
+    if document is None:
         return {"message": "Document not found"}, 404
 
-    data = request.get_json()
-
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     if "name" not in data:
         return {"message": "Missing required field"}, 422
-
-    # Verify if provided documentId is valid
-    if not db.session.query(Document).get(data["documentId"]):
+    if db.session.get(Document, data.get("documentId")) is None:
         return {"message": "Invalid documentId"}, 422
 
     try:
-        # Update the document and save it to the database
         document.name = data["name"]
-        document.updatedAt = datetime.now()
+        document.updatedAt = _current_time()
         db.session.commit()
-
         return jsonify(document.to_dict()), 200
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/documents/<int:id>", methods=["DELETE"])
+@bp.delete("/api/documents/<int:document_id>")
 @jwt_required()
-def delete_document(id):
-    """
-    Deletes a document.
-    """
-    document = db.session.query(Document).get(id)
-    if not document:
+def delete_document(document_id: int) -> ResponseReturnValue:
+    """Delete a document."""
+
+    document = db.session.get(Document, document_id)
+    if document is None:
         return {"message": "Document not found"}, 404
 
     try:
-        # Delete the document from the database
         db.session.delete(document)
         db.session.commit()
-
         return jsonify({}), 204
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
+

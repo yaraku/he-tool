@@ -1,5 +1,4 @@
-"""
-Copyright (C) 2023 Yaraku, Inc.
+"""Copyright (C) 2023 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -16,11 +15,16 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, September 2023
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-# Define a conversion table for category names
-CATEGORY_NAME = {
+# Shared utility constants for the Human Evaluation Tool backend.
+
+from __future__ import annotations
+
+from typing import Final
+
+CATEGORY_NAME: Final[dict[str, str]] = {
     "000": "no-error",
     "A01": "Accuracy/Mistranslation",
     "A02": "Accuracy/PositiveNegative",
@@ -53,8 +57,7 @@ CATEGORY_NAME = {
     "SE1": "SourceError",
 }
 
-# Define a conversion table for severity names
-SEVERITY_NAME = {
+SEVERITY_NAME: Final[dict[str, str]] = {
     "no-error": "no-error",
     "critical": "Critical",
     "minor": "Minor",
