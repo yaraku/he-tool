@@ -55,11 +55,11 @@ migrate = Migrate()
 def _configure_database(app: Flask) -> None:
     """Configure the SQLAlchemy database URI for the application."""
 
-    if "SQLALCHEMY_DATABASE_URI" in app.config and app.config["SQLALCHEMY_DATABASE_URI"]:
-        return
-
     if "SQLALCHEMY_DATABASE_URI" in os.environ:
         app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["SQLALCHEMY_DATABASE_URI"]
+        return
+
+    if "SQLALCHEMY_DATABASE_URI" in app.config and app.config["SQLALCHEMY_DATABASE_URI"]:
         return
 
     required_variables = ["DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER"]
