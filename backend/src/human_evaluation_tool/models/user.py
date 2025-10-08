@@ -23,12 +23,13 @@ Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .. import Base
+
 
 if TYPE_CHECKING:  # pragma: no cover - typing only
     from .annotation import Annotation

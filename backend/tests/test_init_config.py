@@ -68,7 +68,14 @@ def test_missing_secret_raises(monkeypatch):
 
 def test_missing_database_variables_raise(monkeypatch):
     monkeypatch.setenv("JWT_SECRET_KEY", "secret")
-    for key in ["DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER", "SQLALCHEMY_DATABASE_URI"]:
+    for key in [
+        "DB_HOST",
+        "DB_NAME",
+        "DB_PASSWORD",
+        "DB_PORT",
+        "DB_USER",
+        "SQLALCHEMY_DATABASE_URI",
+    ]:
         monkeypatch.delenv(key, raising=False)
 
     with pytest.raises(RuntimeError):

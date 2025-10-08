@@ -19,6 +19,7 @@ Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
 import os
+
 from flask.testing import FlaskClient
 
 

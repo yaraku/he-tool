@@ -81,7 +81,7 @@ def test_annotation_crud_flow(
 def test_annotation_create_missing_field(auth_client, create_evaluation, create_bitext):
     client, login_user = auth_client
     evaluation = create_evaluation(name="Missing Field Eval")
-    bitext = create_bitext()
+    create_bitext()
     response = _request(
         client,
         "post",
@@ -196,7 +196,9 @@ def test_annotation_update_invalid_bitext(auth_client, create_annotation):
     assert response.status_code == 422
 
 
-def test_annotation_update_not_found(auth_client, create_evaluation, create_bitext, create_user):
+def test_annotation_update_not_found(
+    auth_client, create_evaluation, create_bitext, create_user
+):
     client, login_user = auth_client
     evaluation = create_evaluation(name="Update Missing Eval")
     bitext = create_bitext()

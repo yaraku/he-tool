@@ -20,7 +20,6 @@ Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 
 from datetime import datetime, timedelta, timezone
 
-import pytest
 from flask.testing import FlaskClient
 from flask_jwt_extended import decode_token
 

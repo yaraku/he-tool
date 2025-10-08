@@ -23,6 +23,7 @@ Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 from __future__ import annotations
 
 from datetime import datetime
+
 from flask import Blueprint, jsonify, request
 from flask.typing import ResponseReturnValue
 from flask_jwt_extended import get_jwt_identity, jwt_required
@@ -31,6 +32,13 @@ from sqlalchemy.exc import SQLAlchemyError
 
 from .. import db
 from ..models import Annotation, Marking, System
+
+
+MARKING_RESOURCE_PATH = (
+    "/api/annotations/<int:annotation_id>/systems/"
+    "<int:system_id>/markings/<int:marking_id>"
+)
+
 
 bp = Blueprint("markings", __name__)
 
@@ -59,7 +67,9 @@ def _require_system(system_id: int) -> ResponseReturnValue | None:
 
 def _get_marking(annotation_id: int, system_id: int, marking_id: int) -> Marking | None:
     return db.session.execute(
-        select(Marking).filter_by(id=marking_id, annotationId=annotation_id, systemId=system_id)
+        select(Marking).filter_by(
+            id=marking_id, annotationId=annotation_id, systemId=system_id
+        )
     ).scalar_one_or_none()
 
 
@@ -73,9 +83,11 @@ def read_markings(annotation_id: int) -> ResponseReturnValue:
         return annotation_or_error
     annotation = annotation_or_error
 
-    markings = db.session.execute(
-        select(Marking).filter_by(annotationId=annotation.id)
-    ).scalars().all()
+    markings = (
+        db.session.execute(select(Marking).filter_by(annotationId=annotation.id))
+        .scalars()
+        .all()
+    )
     return jsonify([marking.to_dict() for marking in markings]), 200
 
 
@@ -94,7 +106,13 @@ def create_marking(annotation_id: int, system_id: int) -> ResponseReturnValue:
         return system_error
 
     data = request.get_json(silent=True) or {}
-    required_fields = ["errorStart", "errorEnd", "errorCategory", "errorSeverity", "isSource"]
+    required_fields = [
+        "errorStart",
+        "errorEnd",
+        "errorCategory",
+        "errorSeverity",
+        "isSource",
+    ]
     if any(field not in data for field in required_fields):
         return {"message": "Missing required field"}, 422
 
@@ -119,11 +137,11 @@ def create_marking(annotation_id: int, system_id: int) -> ResponseReturnValue:
         return {"message": str(exc)}, 500
 
 
-@bp.get(
-    "/api/annotations/<int:annotation_id>/systems/<int:system_id>/markings/<int:marking_id>"
-)
+@bp.get(MARKING_RESOURCE_PATH)
 @jwt_required()
-def read_marking(annotation_id: int, system_id: int, marking_id: int) -> ResponseReturnValue:
+def read_marking(
+    annotation_id: int, system_id: int, marking_id: int
+) -> ResponseReturnValue:
     """Return a single marking."""
 
     annotation_or_error = _require_annotation(annotation_id)
@@ -141,11 +159,11 @@ def read_marking(annotation_id: int, system_id: int, marking_id: int) -> Respons
     return jsonify(marking.to_dict()), 200
 
 
-@bp.put(
-    "/api/annotations/<int:annotation_id>/systems/<int:system_id>/markings/<int:marking_id>"
-)
+@bp.put(MARKING_RESOURCE_PATH)
 @jwt_required()
-def update_marking(annotation_id: int, system_id: int, marking_id: int) -> ResponseReturnValue:
+def update_marking(
+    annotation_id: int, system_id: int, marking_id: int
+) -> ResponseReturnValue:
     """Update a marking."""
 
     annotation_or_error = _require_annotation(annotation_id)
@@ -163,7 +181,13 @@ def update_marking(annotation_id: int, system_id: int, marking_id: int) -> Respo
         return {"message": "Marking not found"}, 404
 
     data = request.get_json(silent=True) or {}
-    required_fields = ["errorStart", "errorEnd", "errorCategory", "errorSeverity", "isSource"]
+    required_fields = [
+        "errorStart",
+        "errorEnd",
+        "errorCategory",
+        "errorSeverity",
+        "isSource",
+    ]
     if any(field not in data for field in required_fields):
         return {"message": "Missing required field"}, 422
 
@@ -181,11 +205,11 @@ def update_marking(annotation_id: int, system_id: int, marking_id: int) -> Respo
         return {"message": str(exc)}, 500
 
 
-@bp.delete(
-    "/api/annotations/<int:annotation_id>/systems/<int:system_id>/markings/<int:marking_id>"
-)
+@bp.delete(MARKING_RESOURCE_PATH)
 @jwt_required()
-def delete_marking(annotation_id: int, system_id: int, marking_id: int) -> ResponseReturnValue:
+def delete_marking(
+    annotation_id: int, system_id: int, marking_id: int
+) -> ResponseReturnValue:
     """Delete a marking."""
 
     annotation = _require_annotation(annotation_id)
@@ -207,4 +231,3 @@ def delete_marking(annotation_id: int, system_id: int, marking_id: int) -> Respo
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-

@@ -25,6 +25,7 @@ from typing import Callable
 import pytest
 from sqlalchemy.pool import StaticPool
 
+
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret")
 os.environ.setdefault("DB_HOST", "localhost")
 os.environ.setdefault("DB_NAME", "testdb")
@@ -87,7 +88,11 @@ def client(app):
 
 @pytest.fixture
 def create_user() -> Callable[[str, str, str], User]:
-    def _create_user(email: str = "user@example.com", password: str = "password", native_language: str = "en") -> User:
+    def _create_user(
+        email: str = "user@example.com",
+        password: str = "password",
+        native_language: str = "en",
+    ) -> User:
         user = User(
             email=email,
             password=bcrypt.generate_password_hash(password).decode("utf-8"),
@@ -137,7 +142,9 @@ def create_document():
 
 @pytest.fixture
 def create_bitext(create_document):
-    def _create_bitext(document: Document | None = None, source: str = "Hello", target: str = "World") -> Bitext:
+    def _create_bitext(
+        document: Document | None = None, source: str = "Hello", target: str = "World"
+    ) -> Bitext:
         document = document or create_document()
         bitext = Bitext(
             documentId=document.id,
@@ -155,7 +162,11 @@ def create_bitext(create_document):
 
 @pytest.fixture
 def create_evaluation():
-    def _create_evaluation(name: str = "Eval A", eval_type: str = "error-marking", is_finished: bool = False) -> Evaluation:
+    def _create_evaluation(
+        name: str = "Eval A",
+        eval_type: str = "error-marking",
+        is_finished: bool = False,
+    ) -> Evaluation:
         evaluation = Evaluation(
             name=name,
             type=eval_type,

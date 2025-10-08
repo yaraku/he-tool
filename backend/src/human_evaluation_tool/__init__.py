@@ -35,6 +35,7 @@ from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
 from sqlalchemy.orm import DeclarativeBase
 
+
 # Load environment variables from .env files once during import so the factory can
 # rely on ``os.environ`` when configuring the application.
 load_dotenv()
@@ -58,9 +59,11 @@ def _configure_database(app: Flask, *, override_provided: bool = False) -> None:
     if override_provided and app.config.get("SQLALCHEMY_DATABASE_URI"):
         return
 
-    if "SQLALCHEMY_DATABASE_URI" in os.environ:
-        app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["SQLALCHEMY_DATABASE_URI"]
-        return
+    if not override_provided:
+        env_uri = os.environ.get("SQLALCHEMY_DATABASE_URI")
+        if env_uri:
+            app.config["SQLALCHEMY_DATABASE_URI"] = env_uri
+            return
 
     if app.config.get("SQLALCHEMY_DATABASE_URI"):
         return
@@ -80,9 +83,9 @@ def _configure_database(app: Flask, *, override_provided: bool = False) -> None:
     host = os.environ["DB_HOST"]
     port = os.environ["DB_PORT"]
     name = os.environ["DB_NAME"]
-    app.config["SQLALCHEMY_DATABASE_URI"] = (
-        f"postgresql://{user}:{password}@{host}:{port}/{name}"
-    )
+    app.config[
+        "SQLALCHEMY_DATABASE_URI"
+    ] = f"postgresql://{user}:{password}@{host}:{port}/{name}"
 
 
 def create_app(config_override: Mapping[str, Any] | None = None) -> Flask:

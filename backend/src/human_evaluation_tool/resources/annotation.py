@@ -34,6 +34,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .. import db
 from ..models import Annotation, Bitext, Evaluation, User
 
+
 bp = Blueprint("annotations", __name__)
 
 
@@ -64,9 +65,11 @@ def read_annotations() -> ResponseReturnValue:
     if identity is None:
         return {"message": "Missing user identity"}, 401
 
-    annotations = db.session.execute(
-        select(Annotation).filter_by(userId=int(identity))
-    ).scalars().all()
+    annotations = (
+        db.session.execute(select(Annotation).filter_by(userId=int(identity)))
+        .scalars()
+        .all()
+    )
     return jsonify([annotation.to_dict() for annotation in annotations]), 200
 
 
@@ -164,4 +167,3 @@ def delete_annotation(annotation_id: int) -> ResponseReturnValue:
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-

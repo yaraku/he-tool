@@ -41,7 +41,9 @@ def test_marking_flow(
     client, user = auth_client
     evaluation = create_evaluation(name="Mark Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Mark System")
 
     list_empty = _request(client, "get", f"/api/annotations/{annotation.id}/markings")
@@ -63,7 +65,9 @@ def test_marking_flow(
     assert create_response.status_code == 201
     marking_id = create_response.get_json()["id"]
 
-    list_response = _request(client, "get", f"/api/annotations/{annotation.id}/markings")
+    list_response = _request(
+        client, "get", f"/api/annotations/{annotation.id}/markings"
+    )
     assert list_response.status_code == 200
     assert len(list_response.get_json()) == 1
 
@@ -107,7 +111,9 @@ def test_marking_flow(
 def test_marking_requires_valid_annotation(auth_client, create_system):
     client, _ = auth_client
     system = create_system(name="Other System")
-    response = _request(client, "get", f"/api/annotations/999/systems/{system.id}/markings/1")
+    response = _request(
+        client, "get", f"/api/annotations/999/systems/{system.id}/markings/1"
+    )
     assert response.status_code == 404
 
 
@@ -118,13 +124,20 @@ def test_read_markings_annotation_not_found(auth_client):
 
 
 def test_marking_checks_authorization(
-    auth_client, create_annotation, create_system, create_evaluation, create_bitext, create_user
+    auth_client,
+    create_annotation,
+    create_system,
+    create_evaluation,
+    create_bitext,
+    create_user,
 ):
     client, user = auth_client
     other_user = create_user(email="other@example.com")
     evaluation = create_evaluation(name="Other Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, other_user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, other_user, evaluation, bitext
+    )
     system = create_system(name="System Auth")
 
     response = _request(client, "get", f"/api/annotations/{annotation.id}/markings")
@@ -179,7 +192,9 @@ def test_marking_requires_existing_system(
     client, user = auth_client
     evaluation = create_evaluation(name="System Missing Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     response = _request(
         client,
         "post",
@@ -248,7 +263,9 @@ def test_marking_system_not_found_for_operations(
     client, user = auth_client
     evaluation = create_evaluation(name="System Missing Eval 2")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     response_read = _request(
         client,
         "get",
@@ -288,7 +305,9 @@ def test_marking_create_missing_fields(
     client, user = auth_client
     evaluation = create_evaluation(name="Missing Fields Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="System Missing Fields")
 
     response = _request(
@@ -310,7 +329,9 @@ def test_marking_update_missing_fields(
     client, user = auth_client
     evaluation = create_evaluation(name="Update Missing Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Update Missing System")
     create_response = _request(
         client,
@@ -345,7 +366,9 @@ def test_marking_update_not_found(
     client, user = auth_client
     evaluation = create_evaluation(name="Update Missing Eval 2")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Update Missing System 2")
 
     response = _request(
@@ -373,7 +396,9 @@ def test_marking_delete_not_found(
     client, user = auth_client
     evaluation = create_evaluation(name="Delete Missing Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Delete Missing System")
 
     response = _request(
@@ -395,7 +420,9 @@ def test_marking_database_errors(
     client, user = auth_client
     evaluation = create_evaluation(name="DB Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="DB System")
 
     def _raise_error():
@@ -428,7 +455,9 @@ def test_marking_update_delete_database_errors(
     client, user = auth_client
     evaluation = create_evaluation(name="DB Eval 2")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="DB System 2")
     create_response = _request(
         client,

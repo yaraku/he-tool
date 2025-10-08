@@ -22,6 +22,7 @@ werkzeug = "~3.0"
 
 [tool.poetry.group.dev.dependencies]
 black = "~23.11"
+isort = "~5.13"
 flake8 = "~6.1"
 mypy = "^1.8"
 coverage = {extras = ["toml"], version = "^7.4"}
@@ -50,6 +51,11 @@ follow_imports = "silent"
 ignore_missing_imports = true
 implicit_reexport = true
 packages = ["human_evaluation_tool", "tests"]
+
+[tool.isort]
+profile = "black"
+combine_as_imports = true
+lines_after_imports = 2
 
 [[tool.mypy.overrides]]
 module = "tests.*"

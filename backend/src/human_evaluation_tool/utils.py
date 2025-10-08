@@ -24,6 +24,7 @@ from __future__ import annotations
 
 from typing import Final
 
+
 CATEGORY_NAME: Final[dict[str, str]] = {
     "000": "no-error",
     "A01": "Accuracy/Mistranslation",

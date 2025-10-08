@@ -40,6 +40,7 @@ from sqlalchemy import select
 from . import bcrypt, db
 from .models import User
 
+
 bp = Blueprint("auth", __name__)
 
 
@@ -117,4 +118,3 @@ def register_auth_blueprint(app: Flask) -> None:
     """Attach the authentication blueprint to the Flask app."""
 
     app.register_blueprint(bp)
-

@@ -23,12 +23,13 @@ Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .. import Base
+
 
 if TYPE_CHECKING:  # pragma: no cover
     from .annotation_system import AnnotationSystem
@@ -43,7 +44,9 @@ class Annotation(Base):
 
     id: Mapped[int] = mapped_column(primary_key=True)
     userId: Mapped[int] = mapped_column(ForeignKey("user.id"), nullable=False)
-    evaluationId: Mapped[int] = mapped_column(ForeignKey("evaluation.id"), nullable=False)
+    evaluationId: Mapped[int] = mapped_column(
+        ForeignKey("evaluation.id"), nullable=False
+    )
     bitextId: Mapped[int] = mapped_column(ForeignKey("bitext.id"), nullable=False)
     isAnnotated: Mapped[bool] = mapped_column(Boolean, default=False, nullable=False)
     comment: Mapped[str | None] = mapped_column(Text)

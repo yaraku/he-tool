@@ -33,6 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .. import db
 from ..models import Bitext, Document
 
+
 bp = Blueprint("documents", __name__)
 
 
@@ -88,9 +89,11 @@ def read_document_bitexts(document_id: int) -> ResponseReturnValue:
     if db.session.get(Document, document_id) is None:
         return {"message": "Document not found"}, 404
 
-    bitexts = db.session.execute(
-        select(Bitext).filter_by(documentId=document_id)
-    ).scalars().all()
+    bitexts = (
+        db.session.execute(select(Bitext).filter_by(documentId=document_id))
+        .scalars()
+        .all()
+    )
     return jsonify([bitext.to_dict() for bitext in bitexts]), 200
 
 
@@ -135,4 +138,3 @@ def delete_document(document_id: int) -> ResponseReturnValue:
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-

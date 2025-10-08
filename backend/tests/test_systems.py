@@ -29,7 +29,7 @@ def _request(client, method: str, url: str, **kwargs):
 
 def test_system_crud_flow(auth_client, create_system):
     client, _ = auth_client
-    system = create_system(name="Existing System")
+    create_system(name="Existing System")
 
     list_response = _request(client, "get", "/api/systems")
     assert list_response.status_code == 200
@@ -181,6 +181,7 @@ def test_annotation_system_endpoints(
     )
     assert create_response.status_code == 201
     annotation_system_id = create_response.get_json()["id"]
+    assert isinstance(annotation_system_id, int)
 
     duplicate_response = _request(
         client,

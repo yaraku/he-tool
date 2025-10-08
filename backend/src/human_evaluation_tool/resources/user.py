@@ -33,6 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .. import bcrypt, db
 from ..models import User
 
+
 bp = Blueprint("users", __name__)
 
 
@@ -145,5 +146,3 @@ def delete_user(user_id: int) -> ResponseReturnValue:
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-
-

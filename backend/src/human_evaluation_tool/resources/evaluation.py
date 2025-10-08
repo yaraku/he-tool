@@ -44,6 +44,7 @@ from ..models import (
 )
 from ..utils import CATEGORY_NAME, SEVERITY_NAME
 
+
 bp = Blueprint("evaluations", __name__)
 
 
@@ -51,7 +52,9 @@ def _current_time() -> datetime:
     return datetime.now()
 
 
-def _annotations_for_evaluation(evaluation_id: int, user_id: int | None) -> Iterable[Annotation]:
+def _annotations_for_evaluation(
+    evaluation_id: int, user_id: int | None
+) -> Iterable[Annotation]:
     stmt = select(Annotation).filter_by(evaluationId=evaluation_id)
     if user_id is not None:
         stmt = stmt.filter_by(userId=user_id)
@@ -134,9 +137,11 @@ def read_evaluation_results(evaluation_id: int) -> ResponseReturnValue:
     if db.session.get(Evaluation, evaluation_id) is None:
         return {"message": "Evaluation not found"}, 404
 
-    annotations = db.session.execute(
-        select(Annotation).filter_by(evaluationId=evaluation_id)
-    ).scalars().all()
+    annotations = (
+        db.session.execute(select(Annotation).filter_by(evaluationId=evaluation_id))
+        .scalars()
+        .all()
+    )
 
     results: list[str] = []
     for annotation in annotations:
@@ -147,9 +152,11 @@ def read_evaluation_results(evaluation_id: int) -> ResponseReturnValue:
         document = db.session.get(Document, bitext.documentId)
         if document is None:
             continue
-        markings = db.session.execute(
-            select(Marking).filter_by(annotationId=annotation.id)
-        ).scalars().all()
+        markings = (
+            db.session.execute(select(Marking).filter_by(annotationId=annotation.id))
+            .scalars()
+            .all()
+        )
 
         for marking in markings:
             annotation_system = db.session.execute(
@@ -207,7 +214,9 @@ def update_evaluation(evaluation_id: int) -> ResponseReturnValue:
         return {"message": "Missing required field"}, 422
 
     conflict = db.session.execute(
-        select(Evaluation).filter(Evaluation.id != evaluation_id, Evaluation.name == data["name"])
+        select(Evaluation).filter(
+            Evaluation.id != evaluation_id, Evaluation.name == data["name"]
+        )
     ).scalar_one_or_none()
     if conflict is not None:
         return {"message": "Evaluation already exists"}, 409
@@ -241,4 +250,3 @@ def delete_evaluation(evaluation_id: int) -> ResponseReturnValue:
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-

@@ -33,6 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .. import db
 from ..models import Annotation, AnnotationSystem, System
 
+
 bp = Blueprint("systems", __name__)
 
 
@@ -40,9 +41,13 @@ def _current_time() -> datetime:
     return datetime.now()
 
 
-def _get_annotation_system(annotation_id: int, system_id: int) -> AnnotationSystem | None:
+def _get_annotation_system(
+    annotation_id: int, system_id: int
+) -> AnnotationSystem | None:
     return db.session.execute(
-        select(AnnotationSystem).filter_by(annotationId=annotation_id, systemId=system_id)
+        select(AnnotationSystem).filter_by(
+            annotationId=annotation_id, systemId=system_id
+        )
     ).scalar_one_or_none()
 
 
@@ -147,9 +152,13 @@ def read_annotation_systems(annotation_id: int) -> ResponseReturnValue:
     if db.session.get(Annotation, annotation_id) is None:
         return {"message": "Annotation not found"}, 404
 
-    systems = db.session.execute(
-        select(AnnotationSystem).filter_by(annotationId=annotation_id)
-    ).scalars().all()
+    systems = (
+        db.session.execute(
+            select(AnnotationSystem).filter_by(annotationId=annotation_id)
+        )
+        .scalars()
+        .all()
+    )
     return jsonify([system.to_dict() for system in systems]), 200
 
 
@@ -239,4 +248,3 @@ def delete_annotation_system(annotation_id: int, system_id: int) -> ResponseRetu
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-

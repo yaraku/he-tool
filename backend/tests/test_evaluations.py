@@ -18,8 +18,6 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from datetime import datetime
-
 from sqlalchemy.exc import SQLAlchemyError
 
 from human_evaluation_tool import db
@@ -86,11 +84,15 @@ def test_evaluation_read_not_found(auth_client):
     assert response.status_code == 404
 
 
-def test_evaluation_annotations(auth_client, create_evaluation, create_annotation, create_bitext):
+def test_evaluation_annotations(
+    auth_client, create_evaluation, create_annotation, create_bitext
+):
     client, user = auth_client
     evaluation = create_evaluation(name="Annotation Eval")
     bitext = create_bitext()
-    create_annotation(user=user, evaluation=evaluation, bitext=bitext, is_annotated=True)
+    create_annotation(
+        user=user, evaluation=evaluation, bitext=bitext, is_annotated=True
+    )
     response = _request(client, "get", f"/api/evaluations/{evaluation.id}/annotations")
     assert response.status_code == 200
     data = response.get_json()
@@ -131,9 +133,13 @@ def test_evaluation_results(
     client, user = auth_client
     evaluation = create_evaluation(name="Results Eval")
     bitext = create_bitext(source="This is source", target="Target text")
-    annotation = create_annotation(user=user, evaluation=evaluation, bitext=bitext, comment="Comment")
+    annotation = create_annotation(
+        user=user, evaluation=evaluation, bitext=bitext, comment="Comment"
+    )
     system = create_system(name="Results System")
-    annotation_system = create_annotation_system(annotation=annotation, system=system, translation="Translated text")
+    create_annotation_system(
+        annotation=annotation, system=system, translation="Translated text"
+    )
     create_marking(
         annotation=annotation,
         system=system,
@@ -244,7 +250,9 @@ def test_evaluation_results_without_annotation_system(
 def test_evaluation_update_missing_field(auth_client, create_evaluation):
     client, _ = auth_client
     evaluation = create_evaluation(name="Missing Update Eval")
-    response = _request(client, "put", f"/api/evaluations/{evaluation.id}", json={"name": "Only"})
+    response = _request(
+        client, "put", f"/api/evaluations/{evaluation.id}", json={"name": "Only"}
+    )
     assert response.status_code == 422
 
 
@@ -294,7 +302,9 @@ def test_evaluation_database_errors(auth_client, monkeypatch):
     assert response.status_code == 500
 
 
-def test_evaluation_update_delete_database_errors(auth_client, create_evaluation, monkeypatch):
+def test_evaluation_update_delete_database_errors(
+    auth_client, create_evaluation, monkeypatch
+):
     client, _ = auth_client
     evaluation = create_evaluation(name="DB Eval")
 

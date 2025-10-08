@@ -18,8 +18,6 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from datetime import datetime
-
 from sqlalchemy.exc import SQLAlchemyError
 
 from human_evaluation_tool import db

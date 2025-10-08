@@ -33,6 +33,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from .. import db
 from ..models import Bitext, Document
 
+
 bp = Blueprint("bitexts", __name__)
 
 
@@ -132,4 +133,3 @@ def delete_bitext(bitext_id: int) -> ResponseReturnValue:
     except SQLAlchemyError as exc:
         db.session.rollback()
         return {"message": str(exc)}, 500
-
