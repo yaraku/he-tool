@@ -52,14 +52,17 @@ jwt_manager = JWTManager()
 migrate = Migrate()
 
 
-def _configure_database(app: Flask) -> None:
+def _configure_database(app: Flask, *, override_provided: bool = False) -> None:
     """Configure the SQLAlchemy database URI for the application."""
+
+    if override_provided and app.config.get("SQLALCHEMY_DATABASE_URI"):
+        return
 
     if "SQLALCHEMY_DATABASE_URI" in os.environ:
         app.config["SQLALCHEMY_DATABASE_URI"] = os.environ["SQLALCHEMY_DATABASE_URI"]
         return
 
-    if "SQLALCHEMY_DATABASE_URI" in app.config and app.config["SQLALCHEMY_DATABASE_URI"]:
+    if app.config.get("SQLALCHEMY_DATABASE_URI"):
         return
 
     required_variables = ["DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER"]
@@ -102,7 +105,10 @@ def create_app(config_override: Mapping[str, Any] | None = None) -> Flask:
         app.config.from_file(str(config_path), load=json.load)
 
     if config_override:
-        app.config.update(dict(config_override))
+        override_config = dict(config_override)
+        app.config.update(override_config)
+    else:
+        override_config = {}
 
     secret_key = app.config.get("JWT_SECRET_KEY") or os.environ.get("JWT_SECRET_KEY")
     if not secret_key:
@@ -110,7 +116,9 @@ def create_app(config_override: Mapping[str, Any] | None = None) -> Flask:
     app.config["JWT_SECRET_KEY"] = secret_key
     app.config["JSON_SORT_KEYS"] = False
 
-    _configure_database(app)
+    override_provided = "SQLALCHEMY_DATABASE_URI" in override_config
+
+    _configure_database(app, override_provided=override_provided)
 
     db.init_app(app)
     bcrypt.init_app(app)
