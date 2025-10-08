@@ -1,4 +1,5 @@
-"""Copyright (C) 2023 Yaraku, Inc.
+"""
+Copyright (C) 2023-2025 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -15,7 +16,7 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
 """
 
 from pathlib import Path
