@@ -19,8 +19,6 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-# Shared utility constants for the Human Evaluation Tool backend.
-
 from __future__ import annotations
 
 from typing import Final

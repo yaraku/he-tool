@@ -19,8 +19,6 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-# Authentication routes and JWT helpers.
-
 from __future__ import annotations
 
 from datetime import datetime, timedelta, timezone

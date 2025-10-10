@@ -18,5 +18,3 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
 """
-
-# Test suite for the Human Evaluation Tool backend.
