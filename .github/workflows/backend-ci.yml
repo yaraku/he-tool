@@ -105,14 +105,21 @@ jobs:
 
       - name: Run pytest
         working-directory: backend
-        run: poetry run pytest --junitxml=pytest-results.xml --cov=human_evaluation_tool --cov-report=term-missing
+        run: >-
+          poetry run pytest
+          --junitxml=pytest-results.xml
+          --cov=human_evaluation_tool
+          --cov-report=term-missing
+          --cov-report=xml
 
       - name: Upload coverage report
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.python-version }}
-          path: backend/.coverage
+          path: |
+            backend/.coverage
+            backend/coverage.xml
           if-no-files-found: ignore
 
       - name: Upload pytest results
@@ -127,3 +134,89 @@ jobs:
         uses: EnricoMi/publish-unit-test-result-action/linux@v2
         with:
           files: backend/pytest-results.xml
+
+      - name: Summarize coverage
+        if: always()
+        id: coverage_summary
+        working-directory: backend
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import xml.etree.ElementTree as ET
+
+          coverage_file = Path("coverage.xml")
+          output_file = Path(os.environ["GITHUB_OUTPUT"])
+
+          if not coverage_file.exists():
+              print("::warning::Coverage file not found; skipping summary generation.")
+              with output_file.open("w", encoding="utf-8") as fh:
+                  fh.write("line_coverage=\n")
+                  fh.write("branch_coverage=\n")
+              raise SystemExit(0)
+
+          root = ET.parse(coverage_file).getroot()
+          line_rate = float(root.attrib.get("line-rate", "0")) * 100
+          branch_attr = root.attrib.get("branch-rate")
+          branch_rate = f"{float(branch_attr) * 100:.2f}" if branch_attr is not None else ""
+
+          summary_lines = [
+              f"Total line coverage: {line_rate:.2f}%",
+          ]
+          if branch_rate:
+              summary_lines.append(f"Total branch coverage: {branch_rate}%")
+
+          print("\n".join(summary_lines))
+
+          with output_file.open("w", encoding="utf-8") as fh:
+              fh.write(f"line_coverage={line_rate:.2f}\n")
+              fh.write(f"branch_coverage={branch_rate}\n")
+          PY
+
+      - name: Comment coverage on PR
+        if: ${{ github.event_name == 'pull_request' && steps.coverage_summary.outputs.line_coverage != '' }}
+        uses: actions/github-script@v7
+        env:
+          LINE_COVERAGE: ${{ steps.coverage_summary.outputs.line_coverage }}
+          BRANCH_COVERAGE: ${{ steps.coverage_summary.outputs.branch_coverage }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const header = '## 🧪 Coverage Report';
+            const lineCoverage = Number(process.env.LINE_COVERAGE).toFixed(2);
+            const branchCoverageRaw = process.env.BRANCH_COVERAGE;
+            const hasBranch = branchCoverageRaw !== undefined && branchCoverageRaw !== '';
+            const branchCoverage = hasBranch ? Number(branchCoverageRaw).toFixed(2) : null;
+
+            let body = `${header}\n\n| Metric | Coverage |\n| --- | --- |\n| Line | ${lineCoverage}% |`;
+            if (hasBranch && branchCoverage !== null && !Number.isNaN(Number(branchCoverage))) {
+              body += `\n| Branch | ${branchCoverage}% |`;
+            }
+            body += '\n\n_Reported by coverage.py_';
+
+            const { owner, repo } = context.repo;
+            const issue_number = context.issue.number;
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              owner,
+              repo,
+              issue_number,
+              per_page: 100,
+            });
+
+            const existingComment = comments.find((comment) => comment.body && comment.body.startsWith(header));
+
+            if (existingComment) {
+              await github.rest.issues.updateComment({
+                owner,
+                repo,
+                comment_id: existingComment.id,
+                body,
+              });
+            } else {
+              await github.rest.issues.createComment({
+                owner,
+                repo,
+                issue_number,
+                body,
+              });
+            }
