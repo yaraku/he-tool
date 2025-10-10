@@ -1,9 +1,33 @@
+"""
+Copyright (C) 2023-2025 Yaraku, Inc.
+
+This file is part of Human Evaluation Tool.
+
+Human Evaluation Tool is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Human Evaluation Tool is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
+"""
+
 import os
+from collections.abc import Callable, Iterator
 from datetime import datetime
-from typing import Callable
 
 import pytest
+from flask import Flask
+from flask.testing import FlaskClient
 from sqlalchemy.pool import StaticPool
+
 
 os.environ.setdefault("JWT_SECRET_KEY", "test-secret")
 os.environ.setdefault("DB_HOST", "localhost")
@@ -13,7 +37,7 @@ os.environ.setdefault("DB_PORT", "5432")
 os.environ.setdefault("DB_USER", "testuser")
 os.environ.setdefault("SQLALCHEMY_DATABASE_URI", "sqlite:///:memory:")
 
-from human_evaluation_tool import app as flask_app, bcrypt, db  # noqa: E402
+from human_evaluation_tool import bcrypt, create_app, db  # noqa: E402
 from human_evaluation_tool.models import (  # noqa: E402
     Annotation,
     AnnotationSystem,
@@ -26,18 +50,15 @@ from human_evaluation_tool.models import (  # noqa: E402
 )
 
 
-flask_app.config.update(
-    TESTING=True,
-    SQLALCHEMY_DATABASE_URI="sqlite://",
-    SQLALCHEMY_ENGINE_OPTIONS={
-        "connect_args": {"check_same_thread": False},
-        "poolclass": StaticPool,
-    },
-    JWT_COOKIE_CSRF_PROTECT=False,
-)
-with flask_app.app_context():
-    db.session.remove()
-    db.engine.dispose()
+UserFactory = Callable[..., User]
+SystemFactory = Callable[..., System]
+DocumentFactory = Callable[..., Document]
+BitextFactory = Callable[..., Bitext]
+EvaluationFactory = Callable[..., Evaluation]
+AnnotationFactory = Callable[..., Annotation]
+AnnotationSystemFactory = Callable[..., AnnotationSystem]
+MarkingFactory = Callable[..., Marking]
+AuthClient = tuple[FlaskClient, User]
 
 
 def _now() -> datetime:
@@ -45,13 +66,27 @@ def _now() -> datetime:
 
 
 @pytest.fixture(scope="session")
-def app():
-    with flask_app.app_context():
-        yield flask_app
+def app() -> Iterator[Flask]:
+    application = create_app(
+        {
+            "TESTING": True,
+            "SQLALCHEMY_DATABASE_URI": "sqlite://",
+            "SQLALCHEMY_ENGINE_OPTIONS": {
+                "connect_args": {"check_same_thread": False},
+                "poolclass": StaticPool,
+            },
+            "JWT_COOKIE_CSRF_PROTECT": False,
+        }
+    )
+
+    with application.app_context():
+        db.session.remove()
+        db.engine.dispose()
+        yield application
 
 
 @pytest.fixture(autouse=True)
-def _reset_database(app):
+def _reset_database(app: Flask) -> Iterator[None]:
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -61,13 +96,17 @@ def _reset_database(app):
 
 
 @pytest.fixture
-def client(app):
+def client(app: Flask) -> FlaskClient:
     return app.test_client()
 
 
 @pytest.fixture
-def create_user() -> Callable[[str, str, str], User]:
-    def _create_user(email: str = "user@example.com", password: str = "password", native_language: str = "en") -> User:
+def create_user() -> UserFactory:
+    def _create_user(
+        email: str = "user@example.com",
+        password: str = "password",
+        native_language: str = "en",
+    ) -> User:
         user = User(
             email=email,
             password=bcrypt.generate_password_hash(password).decode("utf-8"),
@@ -83,7 +122,7 @@ def create_user() -> Callable[[str, str, str], User]:
 
 
 @pytest.fixture
-def auth_client(client, create_user):
+def auth_client(client: FlaskClient, create_user: UserFactory) -> AuthClient:
     user = create_user()
     response = client.post(
         "/api/auth/login",
@@ -94,7 +133,7 @@ def auth_client(client, create_user):
 
 
 @pytest.fixture
-def create_system():
+def create_system() -> SystemFactory:
     def _create_system(name: str = "System A") -> System:
         system = System(name=name, createdAt=_now(), updatedAt=_now())
         db.session.add(system)
@@ -105,7 +144,7 @@ def create_system():
 
 
 @pytest.fixture
-def create_document():
+def create_document() -> DocumentFactory:
     def _create_document(name: str = "Doc A") -> Document:
         document = Document(name=name, createdAt=_now(), updatedAt=_now())
         db.session.add(document)
@@ -116,8 +155,12 @@ def create_document():
 
 
 @pytest.fixture
-def create_bitext(create_document):
-    def _create_bitext(document: Document | None = None, source: str = "Hello", target: str = "World") -> Bitext:
+def create_bitext(create_document: DocumentFactory) -> BitextFactory:
+    def _create_bitext(
+        document: Document | None = None,
+        source: str = "Hello",
+        target: str = "World",
+    ) -> Bitext:
         document = document or create_document()
         bitext = Bitext(
             documentId=document.id,
@@ -134,8 +177,12 @@ def create_bitext(create_document):
 
 
 @pytest.fixture
-def create_evaluation():
-    def _create_evaluation(name: str = "Eval A", eval_type: str = "error-marking", is_finished: bool = False) -> Evaluation:
+def create_evaluation() -> EvaluationFactory:
+    def _create_evaluation(
+        name: str = "Eval A",
+        eval_type: str = "error-marking",
+        is_finished: bool = False,
+    ) -> Evaluation:
         evaluation = Evaluation(
             name=name,
             type=eval_type,
@@ -151,7 +198,11 @@ def create_evaluation():
 
 
 @pytest.fixture
-def create_annotation(create_user, create_evaluation, create_bitext):
+def create_annotation(
+    create_user: UserFactory,
+    create_evaluation: EvaluationFactory,
+    create_bitext: BitextFactory,
+) -> AnnotationFactory:
     def _create_annotation(
         user: User | None = None,
         evaluation: Evaluation | None = None,
@@ -179,7 +230,10 @@ def create_annotation(create_user, create_evaluation, create_bitext):
 
 
 @pytest.fixture
-def create_annotation_system(create_annotation, create_system):
+def create_annotation_system(
+    create_annotation: AnnotationFactory,
+    create_system: SystemFactory,
+) -> AnnotationSystemFactory:
     def _create_annotation_system(
         annotation: Annotation | None = None,
         system: System | None = None,
@@ -202,7 +256,10 @@ def create_annotation_system(create_annotation, create_system):
 
 
 @pytest.fixture
-def create_marking(create_annotation, create_system):
+def create_marking(
+    create_annotation: AnnotationFactory,
+    create_system: SystemFactory,
+) -> MarkingFactory:
     def _create_marking(
         annotation: Annotation | None = None,
         system: System | None = None,

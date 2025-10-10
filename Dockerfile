@@ -36,9 +36,9 @@ ARG POETRY_VERSION_CONSTRAINT=">=1.5,<1.7"
 
 # 1. Install required system packages
 ARG DEBIAN_FRONTEND=noninteractive
-ENV PIP_DEFAULT_TIMEOUT 500
-ENV PIP_DISABLE_PIP_VERSION_CHECK 1
-ENV PIP_NO_CACHE_DIR 1
+ENV PIP_DEFAULT_TIMEOUT=500
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1
+ENV PIP_NO_CACHE_DIR=1
 RUN apt update                                            \
     && apt install -y build-essential libpq-dev
 RUN pip install "poetry${POETRY_VERSION_CONSTRAINT}"
@@ -50,11 +50,11 @@ COPY --from=frontend /root/public   /root/public
 WORKDIR /root/backend
 
 # 3. Install Python package
-ENV POETRY_VIRTUALENVS_CREATE 0
-ENV PYTHONDONTWRITEBYTECODE 1
-ENV PYTHONUNBUFFERED 1
-ENV PYTHONFAULTHANDLER 1
-ENV PYTHONHASHSEED random
+ENV POETRY_VIRTUALENVS_CREATE=0
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV PYTHONFAULTHANDLER=1
+ENV PYTHONHASHSEED=random
 RUN poetry install --only main --no-interaction --no-ansi \
     && rm -rf ~/.cache
 
@@ -62,5 +62,5 @@ RUN poetry install --only main --no-interaction --no-ansi \
 EXPOSE 8000
 
 # 5. Execute the microservice using gunicorn.
-ENV WORKERS 1
+ENV WORKERS=1
 CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 -w $WORKERS human_evaluation_tool:app"]

@@ -1,148 +1,104 @@
-# Backend
+# Human Evaluation Tool Backend
 
-The backend server for the Human Evaluation Tool, built with Flask and SQLAlchemy.
+The backend is a Flask + SQLAlchemy application that powers the Human Evaluation Tool. It exposes a REST API for managing evaluations, documents, bitext pairs, annotations, systems, markings, and authentication.
 
-## Architecture
+## Quick start
 
-The backend follows a modular architecture with the following structure:
-
+```bash
+cd backend
+poetry install --with dev
+poetry run python main.py
 ```
+
+The development entry point automatically falls back to a SQLite database (`sqlite:///development.db`) and a deterministic JWT secret when the corresponding environment variables are absent. Override them via the environment before launching the server in order to point at PostgreSQL or to use a production-grade secret. When the SQLite fallback is used the database is automatically seeded with:
+
+- A demo user: email `yaraku@yaraku.com`, password `yaraku`
+- A "Sample Evaluation" containing two sentences from the "Sample Machine Translation QA" document and machine translations produced by the "Test MT System"
+
+This makes it possible to log in immediately and try the annotation workflow without any manual setup.
+
+You can also use the standard Flask CLI:
+
+```bash
+poetry run flask --app human_evaluation_tool:app run --debug
+```
+
+## Configuration
+
+`create_app` layers configuration from three sources, in order of precedence:
+
+1. `flask.config.json` (JWT cookie defaults)
+2. Environment overrides passed to `create_app` (e.g. from `main.py` or tests)
+3. The runtime environment variables
+
+When a concrete `SQLALCHEMY_DATABASE_URI` is not provided, the factory falls back to assembling a PostgreSQL URL from:
+
+- `DB_HOST`
+- `DB_NAME`
+- `DB_PASSWORD`
+- `DB_PORT`
+- `DB_USER`
+
+At minimum you must define `JWT_SECRET_KEY` (unless you rely on the development defaults) and either the database URI or the five database components above.
+
+## Project layout
+
+```text
 backend/
+├── flask.config.json        # JWT cookie defaults
+├── main.py                  # Development runner that calls create_app()
+├── pyproject.toml           # Poetry + tooling configuration
 ├── src/
 │   └── human_evaluation_tool/
-│       ├── models/          # Database models
-│       │   ├── annotation.py
-│       │   ├── bitext.py
-│       │   ├── document.py
-│       │   ├── evaluation.py
-│       │   ├── marking.py
-│       │   ├── system.py
-│       │   └── user.py
-│       ├── resources/       # API endpoints
-│       │   ├── annotation.py
-│       │   ├── bitext.py
-│       │   ├── document.py
-│       │   ├── evaluation.py
-│       │   ├── marking.py
-│       │   ├── system.py
-│       │   └── user.py
-│       ├── auth.py         # Authentication logic
-│       └── utils.py        # Utility functions
-├── main.py                 # Application entry point
-├── flask.config.json       # Flask configuration
-└── pyproject.toml         # Project dependencies
+│       ├── __init__.py      # App factory and extension wiring
+│       ├── auth.py          # Authentication blueprint
+│       ├── models/          # SQLAlchemy 2.0 typed ORM models
+│       ├── resources/       # REST resources registered as blueprints
+│       └── utils.py         # Shared category/severity lookups
+└── tests/                   # Pytest suite with fixtures and API coverage
 ```
 
-## Key Components
+## Architecture highlights
 
-### Models
+- **Application factory** – `create_app` wires Flask extensions (SQLAlchemy, JWT, bcrypt, migration), loads configuration, and registers the authentication and resource blueprints. The module exports a ready-to-serve `app` for WSGI usage as well as the shared extensions for imports.
+- **Blueprint modularity** – Each resource (`annotations`, `bitexts`, `documents`, `evaluations`, `markings`, `systems`, `users`) lives in its own blueprint with typed request handlers and explicit validation.
+- **Typed ORM models** – Models use SQLAlchemy 2.0 style `Mapped[...]` annotations backed by the shared declarative `Base`. Relationships between users, evaluations, annotations, systems, and markings mirror the evaluation workflow.
+- **Static asset bridge** – The factory serves files from the repository-level `public/` directory so the backend can host the SPA build output in production.
 
-The application uses SQLAlchemy ORM with the following models:
+See `docs/backend/architecture.md` for a component diagram and deeper discussion.
 
-- **User**: Manages user accounts and authentication
-- **Document**: Represents source documents for translation
-- **System**: Represents MT systems being evaluated
-- **Evaluation**: Manages evaluation projects
-- **Bitext**: Stores source-target text pairs
-- **Annotation**: Stores user annotations
-- **Marking**: Manages error markings and categories
-- **AnnotationSystem**: Links annotations with system outputs
+## Data model
 
-### Resources (API Endpoints)
+The persistent entities cover the evaluation workflow:
 
-The API follows RESTful principles with these main endpoints:
+- `User` – annotators and admins
+- `System` – machine translation systems under evaluation
+- `Document`/`Bitext` – source documents and aligned source/target segments
+- `Evaluation` – collections of annotations for a given study
+- `Annotation` – annotator work tied to a bitext in an evaluation
+- `AnnotationSystem` – translation outputs per annotation/system pair
+- `Marking` – individual error markings with category/severity metadata
 
-- `/api/users`: User management
-- `/api/documents`: Document management
-- `/api/systems`: MT system management
-- `/api/evaluations`: Evaluation project management
-- `/api/bitexts`: Source-target text management
-- `/api/annotations`: Annotation management
-- `/api/markings`: Error marking management
+`docs/backend/domain-model.md` includes an ER diagram and class relationships.
 
-### Authentication
+## Quality gates
 
-- JWT-based authentication using `flask-jwt-extended`
-- Token refresh mechanism
-- Role-based access control
+All automated quality tooling is configured via Poetry:
 
-## Database Schema
-
-```mermaid
-erDiagram
-    annotation {
-        int id PK
-        int userId FK
-        int evaluationId FK
-        int bitextId FK
-        bool isAnnotated
-        string comment
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    annotationSystem {
-        int id PK
-        int annotationId FK
-        int systemId FK
-        string translation
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    bitext {
-        int id PK
-        int documentId FK
-        string source
-        string target
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    document {
-        int id PK
-        string name
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    evaluation {
-        int id PK
-        string name
-        string type
-        string sourceLanguage
-        string targetLanguage
-        bool isFinished
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    marking {
-        int id PK
-        int annotationId FK
-        int systemId FK
-        int errorStart
-        int errorEnd
-        string errorCategory
-        string errorSeverity
-        bool isSource
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    system {
-        int id PK
-        string name
-        DateTime createdAt
-        DateTime updatedAt
-    }
-
-    user {
-        int id PK
-        string email
-        string password
-        string nativeLanguage
-        DateTime createdAt
-        DateTime updatedAt
-    }
+```bash
+poetry run pytest                 # Run the full test suite
+poetry run coverage run -m pytest # Collect coverage
+poetry run coverage report        # Display coverage summary (targets 100 %)
+poetry run mypy src tests         # Strict static type checking
 ```
+
+The pytest suite boots an application instance with an in-memory SQLite database, seeds fixtures for every model, and exercises success/error paths for each API endpoint (including auth flows and evaluation exports). Mypy runs in `strict` mode with targeted overrides for the test package.
+
+## Further reading
+
+The `docs/backend` knowledge base expands on architecture, domain design, API flows, and the testing/type-checking toolkit:
+
+- [`docs/backend/architecture.md`](../docs/backend/architecture.md)
+- [`docs/backend/domain-model.md`](../docs/backend/domain-model.md)
+- [`docs/backend/api-flows.md`](../docs/backend/api-flows.md)
+- [`docs/backend/testing-and-quality.md`](../docs/backend/testing-and-quality.md)

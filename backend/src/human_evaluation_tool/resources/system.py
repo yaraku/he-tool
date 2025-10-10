@@ -1,5 +1,5 @@
 """
-Copyright (C) 2023 Yaraku, Inc.
+Copyright (C) 2023-2025 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,253 +19,231 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
+from __future__ import annotations
+
 from datetime import datetime
 
-from .. import app, db
-from ..models import Annotation, AnnotationSystem, System
-from flask import jsonify, request
+from flask import Blueprint, jsonify, request
+from flask.typing import ResponseReturnValue
 from flask_jwt_extended import jwt_required
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
+from .. import db
+from ..models import Annotation, AnnotationSystem, System
 
-@app.route("/api/systems", methods=["GET"])
+
+bp = Blueprint("systems", __name__)
+
+
+def _current_time() -> datetime:
+    return datetime.now()
+
+
+def _get_annotation_system(
+    annotation_id: int, system_id: int
+) -> AnnotationSystem | None:
+    return db.session.execute(
+        select(AnnotationSystem).filter_by(
+            annotationId=annotation_id, systemId=system_id
+        )
+    ).scalar_one_or_none()
+
+
+@bp.get("/api/systems")
 @jwt_required()
-def read_systems():
-    """
-    Reads all systems.
-    """
-    systems = db.session.query(System).all()
-    return jsonify([s.to_dict() for s in systems]), 200
+def read_systems() -> ResponseReturnValue:
+    """Return all systems."""
+
+    systems = db.session.execute(select(System)).scalars().all()
+    return jsonify([system.to_dict() for system in systems]), 200
 
 
-@app.route("/api/systems", methods=["POST"])
+@bp.post("/api/systems")
 @jwt_required()
-def create_system():
-    """
-    Creates a new system.
-    """
-    data = request.get_json()
+def create_system() -> ResponseReturnValue:
+    """Create a new system."""
 
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     if "name" not in data:
         return {"message": "Missing required field"}, 422
 
-    # Check if a system with the same name already exists
-    if db.session.query(System).filter_by(name=data["name"]).first():
+    existing = db.session.execute(
+        select(System).filter_by(name=data["name"])
+    ).scalar_one_or_none()
+    if existing is not None:
         return {"message": "System already exists"}, 409
 
     try:
-        # Create the system and save it to the database
-        system = System(
-            name=data["name"], createdAt=datetime.now(), updatedAt=datetime.now()
-        )
+        now = _current_time()
+        system = System(name=data["name"], createdAt=now, updatedAt=now)
         db.session.add(system)
         db.session.commit()
-
         return jsonify(system.to_dict()), 201
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/systems/<int:id>", methods=["GET"])
+@bp.get("/api/systems/<int:system_id>")
 @jwt_required()
-def read_system(id):
-    """
-    Reads a specific system.
-    """
-    system = db.session.query(System).get(id)
-    if not system:
-        return {"message": "System not found"}, 404
+def read_system(system_id: int) -> ResponseReturnValue:
+    """Return a specific system."""
 
+    system = db.session.get(System, system_id)
+    if system is None:
+        return {"message": "System not found"}, 404
     return jsonify(system.to_dict()), 200
 
 
-@app.route("/api/systems/<int:id>", methods=["PUT"])
+@bp.put("/api/systems/<int:system_id>")
 @jwt_required()
-def update_system(id):
-    """
-    Updates a specific system.
-    """
-    system = db.session.query(System).get(id)
-    if not system:
+def update_system(system_id: int) -> ResponseReturnValue:
+    """Update a system."""
+
+    system = db.session.get(System, system_id)
+    if system is None:
         return {"message": "System not found"}, 404
 
-    data = request.get_json()
-
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     if "name" not in data:
         return {"message": "Missing required field"}, 422
 
-    # Check if a system with the requested name already exists
-    if (
-        db.session.query(System)
-        .filter(System.id != id, System.name == data["name"])
-        .first()
-    ):
+    conflict = db.session.execute(
+        select(System).filter(System.id != system_id, System.name == data["name"])
+    ).scalar_one_or_none()
+    if conflict is not None:
         return {"message": "System already exists"}, 409
 
     try:
-        # Update the system and save it to the database
         system.name = data["name"]
-        system.updatedAt = datetime.now()
+        system.updatedAt = _current_time()
         db.session.commit()
-
         return jsonify(system.to_dict()), 200
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/systems/<int:id>", methods=["DELETE"])
+@bp.delete("/api/systems/<int:system_id>")
 @jwt_required()
-def delete_system(id):
-    """
-    Deletes a specific system.
-    """
-    system = db.session.query(System).get(id)
-    if not system:
+def delete_system(system_id: int) -> ResponseReturnValue:
+    """Delete a system."""
+
+    system = db.session.get(System, system_id)
+    if system is None:
         return {"message": "System not found"}, 404
 
     try:
-        # Delete the system from the database
         db.session.delete(system)
         db.session.commit()
-
         return jsonify({}), 204
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/annotations/<int:a_id>/systems", methods=["GET"])
+@bp.get("/api/annotations/<int:annotation_id>/systems")
 @jwt_required()
-def read_annotation_systems(a_id):
-    """
-    Reads the systems of an annotation.
-    """
-    if not db.session.query(Annotation).get(a_id):
+def read_annotation_systems(annotation_id: int) -> ResponseReturnValue:
+    """Return systems linked to an annotation."""
+
+    if db.session.get(Annotation, annotation_id) is None:
         return {"message": "Annotation not found"}, 404
 
-    systems = db.session.query(AnnotationSystem).filter_by(annotationId=a_id).all()
-    return jsonify([s.to_dict() for s in systems]), 200
+    systems = (
+        db.session.execute(
+            select(AnnotationSystem).filter_by(annotationId=annotation_id)
+        )
+        .scalars()
+        .all()
+    )
+    return jsonify([system.to_dict() for system in systems]), 200
 
 
-@app.route("/api/annotations/<int:a_id>/systems", methods=["POST"])
+@bp.post("/api/annotations/<int:annotation_id>/systems")
 @jwt_required()
-def create_annotation_system(a_id):
-    """
-    Add a new system for an annotation.
-    """
-    if not db.session.query(Annotation).get(a_id):
+def create_annotation_system(annotation_id: int) -> ResponseReturnValue:
+    """Add a new system record for an annotation."""
+
+    if db.session.get(Annotation, annotation_id) is None:
         return {"message": "Annotation not found"}, 404
 
-    data = request.get_json()
-
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     required_fields = ["systemId", "translation"]
     if any(field not in data for field in required_fields):
         return {"message": "Missing required field"}, 422
 
-    # Verify if provided systemId is valid
-    if not db.session.query(System).get(data["systemId"]):
+    if db.session.get(System, data["systemId"]) is None:
         return {"message": "Invalid systemId"}, 422
 
-    # Check if the system already exists
-    if (
-        db.session.query(AnnotationSystem)
-        .filter_by(annotationId=a_id, systemId=data["systemId"])
-        .first()
-    ):
+    if _get_annotation_system(annotation_id, data["systemId"]) is not None:
         return {"message": "System already exists"}, 409
 
     try:
-        # Create the system and save it to the database
-        system = AnnotationSystem(
-            annotationId=a_id,
+        now = _current_time()
+        annotation_system = AnnotationSystem(
+            annotationId=annotation_id,
             systemId=data["systemId"],
             translation=data["translation"],
-            createdAt=datetime.now(),
-            updatedAt=datetime.now(),
+            createdAt=now,
+            updatedAt=now,
         )
-        db.session.add(system)
+        db.session.add(annotation_system)
         db.session.commit()
-
-        return jsonify(system.to_dict()), 201
-    except SQLAlchemyError as e:
+        return jsonify(annotation_system.to_dict()), 201
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/annotations/<int:a_id>/systems/<int:s_id>", methods=["GET"])
+@bp.get("/api/annotations/<int:annotation_id>/systems/<int:system_id>")
 @jwt_required()
-def read_annotation_system(a_id, s_id):
-    """
-    Reads a specific system of an annotation.
-    """
-    system = (
-        db.session.query(AnnotationSystem)
-        .filter_by(annotationId=a_id, systemId=s_id)
-        .first()
-    )
-    if not system:
+def read_annotation_system(annotation_id: int, system_id: int) -> ResponseReturnValue:
+    """Return a specific annotation system entry."""
+
+    annotation_system = _get_annotation_system(annotation_id, system_id)
+    if annotation_system is None:
+        return {"message": "System not found"}, 404
+    return jsonify(annotation_system.to_dict()), 200
+
+
+@bp.put("/api/annotations/<int:annotation_id>/systems/<int:system_id>")
+@jwt_required()
+def update_annotation_system(annotation_id: int, system_id: int) -> ResponseReturnValue:
+    """Update a specific annotation system."""
+
+    annotation_system = _get_annotation_system(annotation_id, system_id)
+    if annotation_system is None:
         return {"message": "System not found"}, 404
 
-    return jsonify(system.to_dict()), 200
-
-
-@app.route("/api/annotations/<int:a_id>/systems/<int:s_id>", methods=["PUT"])
-@jwt_required()
-def update_annotation_system(a_id, s_id):
-    """
-    Updates a specific system of an annotation.
-    """
-    system = (
-        db.session.query(AnnotationSystem)
-        .filter_by(annotationId=a_id, systemId=s_id)
-        .first()
-    )
-    if not system:
-        return {"message": "System not found"}, 404
-
-    data = request.get_json()
-
-    # Confirm that all required fields are present
+    data = request.get_json(silent=True) or {}
     if "translation" not in data:
         return {"message": "Missing required field"}, 422
 
     try:
-        # Update the system and save it to the database
-        system.translation = data["translation"]
-        system.updatedAt = datetime.now()
+        annotation_system.translation = data["translation"]
+        annotation_system.updatedAt = _current_time()
         db.session.commit()
-
-        return jsonify(system.to_dict()), 200
-    except SQLAlchemyError as e:
+        return jsonify(annotation_system.to_dict()), 200
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500
 
 
-@app.route("/api/annotations/<int:a_id>/systems/<int:s_id>", methods=["DELETE"])
+@bp.delete("/api/annotations/<int:annotation_id>/systems/<int:system_id>")
 @jwt_required()
-def delete_annotation_system(a_id, s_id):
-    """
-    Deletes a specific system of an annotation.
-    """
-    system = (
-        db.session.query(AnnotationSystem)
-        .filter_by(annotationId=a_id, systemId=s_id)
-        .first()
-    )
-    if not system:
+def delete_annotation_system(annotation_id: int, system_id: int) -> ResponseReturnValue:
+    """Delete a specific annotation system entry."""
+
+    annotation_system = _get_annotation_system(annotation_id, system_id)
+    if annotation_system is None:
         return {"message": "System not found"}, 404
 
     try:
-        # Delete the system from the database
-        db.session.delete(system)
+        db.session.delete(annotation_system)
         db.session.commit()
-
         return jsonify({}), 204
-    except SQLAlchemyError as e:
+    except SQLAlchemyError as exc:
         db.session.rollback()
-        return {"message": str(e)}, 500
+        return {"message": str(exc)}, 500

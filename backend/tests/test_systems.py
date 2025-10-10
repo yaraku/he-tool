@@ -1,15 +1,47 @@
+"""
+Copyright (C) 2023-2025 Yaraku, Inc.
+
+This file is part of Human Evaluation Tool.
+
+Human Evaluation Tool is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Human Evaluation Tool is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
+"""
+
+from collections.abc import Callable
+from typing import Any
+
+from flask.testing import FlaskClient
+from pytest import MonkeyPatch
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.test import TestResponse
 
 from human_evaluation_tool import db
+from human_evaluation_tool.models import Annotation, System, User
 
 
-def _request(client, method: str, url: str, **kwargs):
-    return getattr(client, method)(url, **kwargs)
+def _request(client: FlaskClient, method: str, url: str, **kwargs: Any) -> TestResponse:
+    request_callable: Callable[..., TestResponse] = getattr(client, method)
+    return request_callable(url, **kwargs)
 
 
-def test_system_crud_flow(auth_client, create_system):
+def test_system_crud_flow(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
-    system = create_system(name="Existing System")
+    create_system(name="Existing System")
 
     list_response = _request(client, "get", "/api/systems")
     assert list_response.status_code == 200
@@ -40,13 +72,16 @@ def test_system_crud_flow(auth_client, create_system):
     assert delete_response.status_code == 204
 
 
-def test_system_create_missing_field(auth_client):
+def test_system_create_missing_field(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "post", "/api/systems", json={})
     assert response.status_code == 422
 
 
-def test_system_create_duplicate(auth_client, create_system):
+def test_system_create_duplicate(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     system = create_system(name="Duplicate System")
     response = _request(
@@ -58,20 +93,26 @@ def test_system_create_duplicate(auth_client, create_system):
     assert response.status_code == 409
 
 
-def test_system_read_not_found(auth_client):
+def test_system_read_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "get", "/api/systems/999")
     assert response.status_code == 404
 
 
-def test_system_update_missing_field(auth_client, create_system):
+def test_system_update_missing_field(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     system = create_system(name="Needs Update")
     response = _request(client, "put", f"/api/systems/{system.id}", json={})
     assert response.status_code == 422
 
 
-def test_system_update_duplicate(auth_client, create_system):
+def test_system_update_duplicate(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     first = create_system(name="First System")
     second = create_system(name="Second System")
@@ -84,22 +125,25 @@ def test_system_update_duplicate(auth_client, create_system):
     assert response.status_code == 409
 
 
-def test_system_update_not_found(auth_client):
+def test_system_update_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "put", "/api/systems/999", json={"name": "Missing"})
     assert response.status_code == 404
 
 
-def test_system_delete_not_found(auth_client):
+def test_system_delete_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "delete", "/api/systems/999")
     assert response.status_code == 404
 
 
-def test_system_create_database_error(auth_client, monkeypatch):
+def test_system_create_database_error(
+    auth_client: tuple[FlaskClient, User],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -107,11 +151,15 @@ def test_system_create_database_error(auth_client, monkeypatch):
     assert response.status_code == 500
 
 
-def test_system_update_database_error(auth_client, create_system, monkeypatch):
+def test_system_update_database_error(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     system = create_system(name="To Update")
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -124,11 +172,15 @@ def test_system_update_database_error(auth_client, create_system, monkeypatch):
     assert response.status_code == 500
 
 
-def test_system_delete_database_error(auth_client, create_system, monkeypatch):
+def test_system_delete_database_error(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     system = create_system(name="To Delete")
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -137,10 +189,10 @@ def test_system_delete_database_error(auth_client, create_system, monkeypatch):
 
 
 def test_annotation_system_endpoints(
-    auth_client,
-    create_annotation,
-    create_system,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     annotation = create_annotation()
     system = create_system(name="Annotation System")
@@ -161,6 +213,7 @@ def test_annotation_system_endpoints(
     )
     assert create_response.status_code == 201
     annotation_system_id = create_response.get_json()["id"]
+    assert isinstance(annotation_system_id, int)
 
     duplicate_response = _request(
         client,
@@ -224,7 +277,11 @@ def test_annotation_system_endpoints(
     assert delete_again.status_code == 404
 
 
-def test_annotation_system_validation(auth_client, create_annotation, create_system):
+def test_annotation_system_validation(
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     annotation = create_annotation()
     system = create_system(name="Extra System")
@@ -262,13 +319,16 @@ def test_annotation_system_validation(auth_client, create_annotation, create_sys
 
 
 def test_annotation_system_database_errors(
-    auth_client, create_annotation, create_system, monkeypatch
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     annotation = create_annotation()
     system = create_system(name="DB Error System")
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     original_commit = db.session.commit

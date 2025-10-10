@@ -79,7 +79,7 @@ poetry install
 
 # Create and configure .env file
 cat > .env << EOL
-FLASK_APP=main.py
+FLASK_APP=human_evaluation_tool:app
 FLASK_ENV=development
 DB_HOST=localhost
 DB_PORT=5432
@@ -94,8 +94,11 @@ poetry run flask db init
 poetry run flask db migrate
 poetry run flask db upgrade
 
-# Start the backend server
+# Start the backend server (development)
 poetry run python main.py
+
+# Or launch with Gunicorn (production-style)
+poetry run gunicorn --bind 0.0.0.0:8000 human_evaluation_tool:app
 ```
 
 4. Set up the frontend (in a new terminal):
@@ -118,10 +121,12 @@ npm run dev
 
 ## Usage
 
+When you run the backend without PostgreSQL credentials it falls back to a local SQLite database. That database is pre-populated with a demo user (`yaraku@yaraku.com` / `yaraku`) and a "Sample Evaluation" so you can explore the workflow immediately.
+
 1. Access the application at http://localhost:5173
-2. Register a new account or log in
-3. Create a new evaluation project
-4. Upload documents and system outputs
+2. Log in with the demo credentials above or register a new account
+3. Open the "Sample Evaluation" to try the annotation UI, or create a new evaluation project
+4. Upload documents and system outputs when running your own studies
 5. Start evaluating translations
 
 ## Development
@@ -139,6 +144,7 @@ cd backend
 poetry run flask db migrate  # Create new migrations
 poetry run flask db upgrade  # Apply migrations
 poetry run python main.py  # Run development server
+poetry run gunicorn --bind 0.0.0.0:8000 human_evaluation_tool:app  # Run with Gunicorn
 ```
 
 ### Frontend Development

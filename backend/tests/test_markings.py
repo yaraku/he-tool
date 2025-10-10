@@ -1,27 +1,63 @@
+"""
+Copyright (C) 2023-2025 Yaraku, Inc.
+
+This file is part of Human Evaluation Tool.
+
+Human Evaluation Tool is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by the
+Free Software Foundation, either version 3 of the License,
+or (at your option) any later version.
+
+Human Evaluation Tool is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
+or FITNESS FOR A PARTICULAR PURPOSE.
+See the GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License along with
+Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
+
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
+"""
+
+from collections.abc import Callable
+from typing import Any
+
+from flask.testing import FlaskClient
+from pytest import MonkeyPatch
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.test import TestResponse
 
 from human_evaluation_tool import db
+from human_evaluation_tool.models import Annotation, Bitext, Evaluation, System, User
 
 
-def _request(client, method: str, url: str, **kwargs):
-    return getattr(client, method)(url, **kwargs)
+def _request(client: FlaskClient, method: str, url: str, **kwargs: Any) -> TestResponse:
+    request_callable: Callable[..., TestResponse] = getattr(client, method)
+    return request_callable(url, **kwargs)
 
 
-def _create_annotation_for_user(create_annotation, user, evaluation=None, bitext=None):
+def _create_annotation_for_user(
+    create_annotation: Callable[..., Annotation],
+    user: User,
+    evaluation: Evaluation | None = None,
+    bitext: Bitext | None = None,
+) -> Annotation:
     return create_annotation(user=user, evaluation=evaluation, bitext=bitext)
 
 
 def test_marking_flow(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Mark Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Mark System")
 
     list_empty = _request(client, "get", f"/api/annotations/{annotation.id}/markings")
@@ -43,7 +79,9 @@ def test_marking_flow(
     assert create_response.status_code == 201
     marking_id = create_response.get_json()["id"]
 
-    list_response = _request(client, "get", f"/api/annotations/{annotation.id}/markings")
+    list_response = _request(
+        client, "get", f"/api/annotations/{annotation.id}/markings"
+    )
     assert list_response.status_code == 200
     assert len(list_response.get_json()) == 1
 
@@ -84,27 +122,41 @@ def test_marking_flow(
     assert not_found_response.status_code == 404
 
 
-def test_marking_requires_valid_annotation(auth_client, create_system):
+def test_marking_requires_valid_annotation(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     system = create_system(name="Other System")
-    response = _request(client, "get", f"/api/annotations/999/systems/{system.id}/markings/1")
+    response = _request(
+        client, "get", f"/api/annotations/999/systems/{system.id}/markings/1"
+    )
     assert response.status_code == 404
 
 
-def test_read_markings_annotation_not_found(auth_client):
+def test_read_markings_annotation_not_found(
+    auth_client: tuple[FlaskClient, User]
+) -> None:
     client, _ = auth_client
     response = _request(client, "get", "/api/annotations/999/markings")
     assert response.status_code == 404
 
 
 def test_marking_checks_authorization(
-    auth_client, create_annotation, create_system, create_evaluation, create_bitext, create_user
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+    create_user: Callable[..., User],
+) -> None:
     client, user = auth_client
     other_user = create_user(email="other@example.com")
     evaluation = create_evaluation(name="Other Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, other_user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, other_user, evaluation, bitext
+    )
     system = create_system(name="System Auth")
 
     response = _request(client, "get", f"/api/annotations/{annotation.id}/markings")
@@ -154,12 +206,17 @@ def test_marking_checks_authorization(
 
 
 def test_marking_requires_existing_system(
-    auth_client, create_annotation, create_evaluation, create_bitext
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="System Missing Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     response = _request(
         client,
         "post",
@@ -175,7 +232,10 @@ def test_marking_requires_existing_system(
     assert response.status_code == 404
 
 
-def test_marking_create_annotation_not_found(auth_client, create_system):
+def test_marking_create_annotation_not_found(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     system = create_system(name="Missing Annotation System")
     response = _request(
@@ -193,7 +253,10 @@ def test_marking_create_annotation_not_found(auth_client, create_system):
     assert response.status_code == 404
 
 
-def test_marking_update_annotation_not_found(auth_client, create_system):
+def test_marking_update_annotation_not_found(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     system = create_system(name="Update Missing Annotation System")
     response = _request(
@@ -211,7 +274,10 @@ def test_marking_update_annotation_not_found(auth_client, create_system):
     assert response.status_code == 404
 
 
-def test_marking_delete_annotation_not_found(auth_client, create_system):
+def test_marking_delete_annotation_not_found(
+    auth_client: tuple[FlaskClient, User],
+    create_system: Callable[..., System],
+) -> None:
     client, _ = auth_client
     system = create_system(name="Delete Missing Annotation System")
     response = _request(
@@ -223,12 +289,17 @@ def test_marking_delete_annotation_not_found(auth_client, create_system):
 
 
 def test_marking_system_not_found_for_operations(
-    auth_client, create_annotation, create_evaluation, create_bitext
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="System Missing Eval 2")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     response_read = _request(
         client,
         "get",
@@ -259,16 +330,18 @@ def test_marking_system_not_found_for_operations(
 
 
 def test_marking_create_missing_fields(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Missing Fields Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="System Missing Fields")
 
     response = _request(
@@ -281,16 +354,18 @@ def test_marking_create_missing_fields(
 
 
 def test_marking_update_missing_fields(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Update Missing Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Update Missing System")
     create_response = _request(
         client,
@@ -316,16 +391,18 @@ def test_marking_update_missing_fields(
 
 
 def test_marking_update_not_found(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Update Missing Eval 2")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Update Missing System 2")
 
     response = _request(
@@ -344,16 +421,18 @@ def test_marking_update_not_found(
 
 
 def test_marking_delete_not_found(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Delete Missing Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="Delete Missing System")
 
     response = _request(
@@ -365,20 +444,22 @@ def test_marking_delete_not_found(
 
 
 def test_marking_database_errors(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-    monkeypatch,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="DB Eval")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="DB System")
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -398,17 +479,19 @@ def test_marking_database_errors(
 
 
 def test_marking_update_delete_database_errors(
-    auth_client,
-    create_annotation,
-    create_system,
-    create_evaluation,
-    create_bitext,
-    monkeypatch,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_annotation: Callable[..., Annotation],
+    create_system: Callable[..., System],
+    create_evaluation: Callable[..., Evaluation],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="DB Eval 2")
     bitext = create_bitext()
-    annotation = _create_annotation_for_user(create_annotation, user, evaluation, bitext)
+    annotation = _create_annotation_for_user(
+        create_annotation, user, evaluation, bitext
+    )
     system = create_system(name="DB System 2")
     create_response = _request(
         client,
@@ -424,7 +507,7 @@ def test_marking_update_delete_database_errors(
     )
     marking_id = create_response.get_json()["id"]
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
