@@ -37,6 +37,7 @@ addopts = "-ra"
 [tool.coverage.run]
 branch = true
 source = ["human_evaluation_tool"]
+relative_files = true
 
 [tool.coverage.report]
 show_missing = true

@@ -179,9 +179,15 @@ For a detailed ER diagram, see `backend/README.md`.
 
 1. Fork the repository
 2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+3. For backend changes, install dependencies with `poetry install --with dev` and run:
+   - `poetry run black --check src tests`
+   - `poetry run isort --check-only src tests`
+   - `poetry run flake8 src tests`
+   - `poetry run mypy src tests`
+   - `poetry run pytest`
+4. Commit your changes
+5. Push to the branch
+6. Create a Pull Request and ensure the **Backend CI** workflow passes when touching backend code.
 
 ## License
 
