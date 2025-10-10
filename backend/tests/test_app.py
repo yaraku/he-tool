@@ -16,29 +16,25 @@ See the GNU General Public License for more details.
 You should have received a copy of the GNU General Public License along with
 Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 
-Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
+Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
 """
 
-from __future__ import annotations
+import os
 
-from flask import Flask
-
-from . import annotation, bitext, document, evaluation, marking, system, user
+from flask.testing import FlaskClient
 
 
-def register_resources(app: Flask) -> None:
-    """Register all resource blueprints with the Flask app."""
-
-    for blueprint in (
-        annotation.bp,
-        bitext.bp,
-        document.bp,
-        evaluation.bp,
-        marking.bp,
-        system.bp,
-        user.bp,
-    ):
-        app.register_blueprint(blueprint)
+def test_index_route_serves_index_html(client: FlaskClient) -> None:
+    response = client.get("/")
+    assert response.status_code == 200
+    assert b"<!DOCTYPE" in response.data
 
 
-__all__ = ["register_resources"]
+def test_index_route_serves_static_file(client: FlaskClient) -> None:
+    static_path = "vite.svg"
+    static_root = client.application.static_folder
+    assert static_root is not None
+    full_path = os.path.join(static_root, static_path)
+    assert os.path.exists(full_path)
+    response = client.get(f"/{static_path}")
+    assert response.status_code == 200

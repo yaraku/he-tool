@@ -1,5 +1,5 @@
 """
-Copyright (C) 2023 Yaraku, Inc.
+Copyright (C) 2023-2025 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,16 +19,38 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from .. import db
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import DateTime, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .. import Base
 
 
-class System(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    name = db.Column(db.String(120), unique=True, nullable=False)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+if TYPE_CHECKING:  # pragma: no cover - typing only
+    from .annotation_system import AnnotationSystem
+    from .marking import Marking
 
-    def to_dict(self):
+
+class System(Base):
+    __tablename__ = "system"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(120), unique=True, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    annotation_systems: Mapped[list["AnnotationSystem"]] = relationship(
+        "AnnotationSystem", back_populates="system", cascade="all, delete-orphan"
+    )
+    markings: Mapped[list["Marking"]] = relationship(
+        "Marking", back_populates="system", cascade="all, delete-orphan"
+    )
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "name": self.name,

@@ -1,5 +1,5 @@
 """
-Copyright (C) 2023 Yaraku, Inc.
+Copyright (C) 2023-2025 Yaraku, Inc.
 
 This file is part of Human Evaluation Tool.
 
@@ -19,22 +19,44 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, August 2023
 """
 
-from .. import db
+from __future__ import annotations
+
+from datetime import datetime
+from typing import TYPE_CHECKING, Any
+
+from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+
+from .. import Base
 
 
-class Marking(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    annotationId = db.Column(db.Integer, db.ForeignKey("annotation.id"), nullable=False)
-    systemId = db.Column(db.Integer, db.ForeignKey("system.id"), nullable=False)
-    errorStart = db.Column(db.Integer, nullable=False)
-    errorEnd = db.Column(db.Integer, nullable=False)
-    errorCategory = db.Column(db.String(20), nullable=False)
-    errorSeverity = db.Column(db.String(20), nullable=False)
-    isSource = db.Column(db.Boolean, nullable=False)
-    createdAt = db.Column(db.DateTime, nullable=False)
-    updatedAt = db.Column(db.DateTime, nullable=False)
+if TYPE_CHECKING:  # pragma: no cover
+    from .annotation import Annotation
+    from .system import System
 
-    def to_dict(self):
+
+class Marking(Base):
+    __tablename__ = "marking"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    annotationId: Mapped[int] = mapped_column(
+        ForeignKey("annotation.id"), nullable=False
+    )
+    systemId: Mapped[int] = mapped_column(ForeignKey("system.id"), nullable=False)
+    errorStart: Mapped[int] = mapped_column(Integer, nullable=False)
+    errorEnd: Mapped[int] = mapped_column(Integer, nullable=False)
+    errorCategory: Mapped[str] = mapped_column(String(20), nullable=False)
+    errorSeverity: Mapped[str] = mapped_column(String(20), nullable=False)
+    isSource: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    createdAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    updatedAt: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+
+    annotation: Mapped["Annotation"] = relationship(
+        "Annotation", back_populates="markings"
+    )
+    system: Mapped["System"] = relationship("System", back_populates="markings")
+
+    def to_dict(self) -> dict[str, Any]:
         return {
             "id": self.id,
             "annotationId": self.annotationId,
