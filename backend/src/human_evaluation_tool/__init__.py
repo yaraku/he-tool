@@ -39,6 +39,9 @@ from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase
 
 
+DB_ENV_VARIABLES = ("DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER")
+
+
 # Load environment variables from .env files once during import so the factory can
 # rely on ``os.environ`` when configuring the application.
 load_dotenv()
@@ -56,23 +59,13 @@ jwt_manager = JWTManager()
 migrate = Migrate()
 
 
-def _configure_database(app: Flask, *, override_provided: bool = False) -> None:
+def _configure_database(app: Flask) -> None:
     """Configure the SQLAlchemy database URI for the application."""
-
-    if override_provided and app.config.get("SQLALCHEMY_DATABASE_URI"):
-        return
-
-    if not override_provided:
-        env_uri = os.environ.get("SQLALCHEMY_DATABASE_URI")
-        if env_uri:
-            app.config["SQLALCHEMY_DATABASE_URI"] = env_uri
-            return
 
     if app.config.get("SQLALCHEMY_DATABASE_URI"):
         return
 
-    required_variables = ["DB_HOST", "DB_NAME", "DB_PASSWORD", "DB_PORT", "DB_USER"]
-    missing = [key for key in required_variables if key not in os.environ]
+    missing = [key for key in DB_ENV_VARIABLES if key not in os.environ]
     if missing:
         missing_values = ", ".join(missing)
         raise RuntimeError(
@@ -122,9 +115,14 @@ def create_app(config_override: Mapping[str, Any] | None = None) -> Flask:
     app.config["JWT_SECRET_KEY"] = secret_key
     app.config["JSON_SORT_KEYS"] = False
 
-    override_provided = "SQLALCHEMY_DATABASE_URI" in override_config
+    explicit_uri_override = "SQLALCHEMY_DATABASE_URI" in override_config
 
-    _configure_database(app, override_provided=override_provided)
+    if not explicit_uri_override:
+        env_uri = os.environ.get("SQLALCHEMY_DATABASE_URI")
+        if env_uri:
+            app.config["SQLALCHEMY_DATABASE_URI"] = env_uri
+
+    _configure_database(app)
 
     db.init_app(app)
     bcrypt.init_app(app)
@@ -214,7 +212,10 @@ def _maybe_seed_sqlite_sample_data(app: Flask) -> None:
                 Bitext(
                     documentId=document.id,
                     source="Machine translation enables global communication.",
-                    target="Machine translation makes cross-language communication easier.",
+                    target=(
+                        "Machine translation makes cross-language communication "
+                        "easier."
+                    ),
                     createdAt=now,
                     updatedAt=now,
                 ),
@@ -270,9 +271,7 @@ def _maybe_seed_sqlite_sample_data(app: Flask) -> None:
             db.session.commit()
         except Exception as exc:  # pragma: no cover - defensive
             db.session.rollback()
-            app.logger.warning(
-                "Failed to seed SQLite sample data: %s", exc
-            )
+            app.logger.warning("Failed to seed SQLite sample data: %s", exc)
 
 
 def _create_default_app() -> Flask:
@@ -281,7 +280,9 @@ def _create_default_app() -> Flask:
     default_config: dict[str, Any] = {}
     if "JWT_SECRET_KEY" not in os.environ:
         default_config["JWT_SECRET_KEY"] = "development-secret-key"
-    if "SQLALCHEMY_DATABASE_URI" not in os.environ:
+    if "SQLALCHEMY_DATABASE_URI" not in os.environ and not any(
+        key in os.environ for key in DB_ENV_VARIABLES
+    ):
         default_config["SQLALCHEMY_DATABASE_URI"] = "sqlite://"
 
     return create_app(default_config)
@@ -289,4 +290,13 @@ def _create_default_app() -> Flask:
 
 app = _create_default_app()
 
-__all__ = ["Base", "app", "bcrypt", "create_app", "db", "jwt_manager", "migrate"]
+__all__ = [
+    "DB_ENV_VARIABLES",
+    "Base",
+    "app",
+    "bcrypt",
+    "create_app",
+    "db",
+    "jwt_manager",
+    "migrate",
+]

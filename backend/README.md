@@ -20,7 +20,7 @@ This makes it possible to log in immediately and try the annotation workflow wit
 You can also use the standard Flask CLI:
 
 ```bash
-poetry run flask --app human_evaluation_tool:create_app run --debug
+poetry run flask --app human_evaluation_tool:app run --debug
 ```
 
 ## Configuration

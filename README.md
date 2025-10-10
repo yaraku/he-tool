@@ -79,7 +79,7 @@ poetry install
 
 # Create and configure .env file
 cat > .env << EOL
-FLASK_APP=main.py
+FLASK_APP=human_evaluation_tool:app
 FLASK_ENV=development
 DB_HOST=localhost
 DB_PORT=5432
@@ -94,8 +94,11 @@ poetry run flask db init
 poetry run flask db migrate
 poetry run flask db upgrade
 
-# Start the backend server
+# Start the backend server (development)
 poetry run python main.py
+
+# Or launch with Gunicorn (production-style)
+poetry run gunicorn --bind 0.0.0.0:8000 human_evaluation_tool:app
 ```
 
 4. Set up the frontend (in a new terminal):
@@ -141,6 +144,7 @@ cd backend
 poetry run flask db migrate  # Create new migrations
 poetry run flask db upgrade  # Apply migrations
 poetry run python main.py  # Run development server
+poetry run gunicorn --bind 0.0.0.0:8000 human_evaluation_tool:app  # Run with Gunicorn
 ```
 
 ### Frontend Development

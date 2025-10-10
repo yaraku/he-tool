@@ -26,7 +26,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
-from human_evaluation_tool import create_app
+from human_evaluation_tool import DB_ENV_VARIABLES, create_app
 
 
 def _development_config() -> dict[str, Any]:
@@ -35,8 +35,16 @@ def _development_config() -> dict[str, Any]:
     config: dict[str, Any] = {}
     if "JWT_SECRET_KEY" not in os.environ:
         config["JWT_SECRET_KEY"] = "development-secret-key"
-    if "SQLALCHEMY_DATABASE_URI" not in os.environ:
-        config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///development.db"
+
+    if "SQLALCHEMY_DATABASE_URI" in os.environ:
+        return config
+
+    # If any explicit database configuration is present, let the factory assemble
+    # the SQLAlchemy URI instead of forcing a SQLite fallback.
+    if any(key in os.environ for key in DB_ENV_VARIABLES):
+        return config
+
+    config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///development.db"
     return config
 
 
