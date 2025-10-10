@@ -20,10 +20,12 @@ Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
 """
 
 import os
+from collections.abc import Callable, Iterator
 from datetime import datetime
-from typing import Callable
 
 import pytest
+from flask import Flask
+from flask.testing import FlaskClient
 from sqlalchemy.pool import StaticPool
 
 
@@ -48,13 +50,24 @@ from human_evaluation_tool.models import (  # noqa: E402
 )
 
 
+UserFactory = Callable[..., User]
+SystemFactory = Callable[..., System]
+DocumentFactory = Callable[..., Document]
+BitextFactory = Callable[..., Bitext]
+EvaluationFactory = Callable[..., Evaluation]
+AnnotationFactory = Callable[..., Annotation]
+AnnotationSystemFactory = Callable[..., AnnotationSystem]
+MarkingFactory = Callable[..., Marking]
+AuthClient = tuple[FlaskClient, User]
+
+
 def _now() -> datetime:
     return datetime(2023, 1, 1, 12, 0, 0)
 
 
 @pytest.fixture(scope="session")
-def app():
-    app = create_app(
+def app() -> Iterator[Flask]:
+    application = create_app(
         {
             "TESTING": True,
             "SQLALCHEMY_DATABASE_URI": "sqlite://",
@@ -66,14 +79,14 @@ def app():
         }
     )
 
-    with app.app_context():
+    with application.app_context():
         db.session.remove()
         db.engine.dispose()
-        yield app
+        yield application
 
 
 @pytest.fixture(autouse=True)
-def _reset_database(app):
+def _reset_database(app: Flask) -> Iterator[None]:
     with app.app_context():
         db.drop_all()
         db.create_all()
@@ -83,12 +96,12 @@ def _reset_database(app):
 
 
 @pytest.fixture
-def client(app):
+def client(app: Flask) -> FlaskClient:
     return app.test_client()
 
 
 @pytest.fixture
-def create_user() -> Callable[[str, str, str], User]:
+def create_user() -> UserFactory:
     def _create_user(
         email: str = "user@example.com",
         password: str = "password",
@@ -109,7 +122,7 @@ def create_user() -> Callable[[str, str, str], User]:
 
 
 @pytest.fixture
-def auth_client(client, create_user):
+def auth_client(client: FlaskClient, create_user: UserFactory) -> AuthClient:
     user = create_user()
     response = client.post(
         "/api/auth/login",
@@ -120,7 +133,7 @@ def auth_client(client, create_user):
 
 
 @pytest.fixture
-def create_system():
+def create_system() -> SystemFactory:
     def _create_system(name: str = "System A") -> System:
         system = System(name=name, createdAt=_now(), updatedAt=_now())
         db.session.add(system)
@@ -131,7 +144,7 @@ def create_system():
 
 
 @pytest.fixture
-def create_document():
+def create_document() -> DocumentFactory:
     def _create_document(name: str = "Doc A") -> Document:
         document = Document(name=name, createdAt=_now(), updatedAt=_now())
         db.session.add(document)
@@ -142,9 +155,11 @@ def create_document():
 
 
 @pytest.fixture
-def create_bitext(create_document):
+def create_bitext(create_document: DocumentFactory) -> BitextFactory:
     def _create_bitext(
-        document: Document | None = None, source: str = "Hello", target: str = "World"
+        document: Document | None = None,
+        source: str = "Hello",
+        target: str = "World",
     ) -> Bitext:
         document = document or create_document()
         bitext = Bitext(
@@ -162,7 +177,7 @@ def create_bitext(create_document):
 
 
 @pytest.fixture
-def create_evaluation():
+def create_evaluation() -> EvaluationFactory:
     def _create_evaluation(
         name: str = "Eval A",
         eval_type: str = "error-marking",
@@ -183,7 +198,11 @@ def create_evaluation():
 
 
 @pytest.fixture
-def create_annotation(create_user, create_evaluation, create_bitext):
+def create_annotation(
+    create_user: UserFactory,
+    create_evaluation: EvaluationFactory,
+    create_bitext: BitextFactory,
+) -> AnnotationFactory:
     def _create_annotation(
         user: User | None = None,
         evaluation: Evaluation | None = None,
@@ -211,7 +230,10 @@ def create_annotation(create_user, create_evaluation, create_bitext):
 
 
 @pytest.fixture
-def create_annotation_system(create_annotation, create_system):
+def create_annotation_system(
+    create_annotation: AnnotationFactory,
+    create_system: SystemFactory,
+) -> AnnotationSystemFactory:
     def _create_annotation_system(
         annotation: Annotation | None = None,
         system: System | None = None,
@@ -234,7 +256,10 @@ def create_annotation_system(create_annotation, create_system):
 
 
 @pytest.fixture
-def create_marking(create_annotation, create_system):
+def create_marking(
+    create_annotation: AnnotationFactory,
+    create_system: SystemFactory,
+) -> MarkingFactory:
     def _create_marking(
         annotation: Annotation | None = None,
         system: System | None = None,

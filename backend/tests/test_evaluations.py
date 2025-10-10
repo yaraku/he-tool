@@ -19,16 +19,35 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
 """
 
+from collections.abc import Callable
+from typing import Any
+
+from flask.testing import FlaskClient
+from pytest import MonkeyPatch
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.test import TestResponse
 
 from human_evaluation_tool import db
+from human_evaluation_tool.models import (
+    Annotation,
+    AnnotationSystem,
+    Bitext,
+    Evaluation,
+    Marking,
+    System,
+    User,
+)
 
 
-def _request(client, method: str, url: str, **kwargs):
-    return getattr(client, method)(url, **kwargs)
+def _request(client: FlaskClient, method: str, url: str, **kwargs: Any) -> TestResponse:
+    request_callable: Callable[..., TestResponse] = getattr(client, method)
+    return request_callable(url, **kwargs)
 
 
-def test_evaluation_crud_flow(auth_client, create_evaluation):
+def test_evaluation_crud_flow(
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+) -> None:
     client, _ = auth_client
     create_evaluation(name="Existing Eval")
 
@@ -61,13 +80,16 @@ def test_evaluation_crud_flow(auth_client, create_evaluation):
     assert delete_response.status_code == 204
 
 
-def test_evaluation_create_missing_field(auth_client):
+def test_evaluation_create_missing_field(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "post", "/api/evaluations", json={"name": "Missing"})
     assert response.status_code == 422
 
 
-def test_evaluation_create_duplicate(auth_client, create_evaluation):
+def test_evaluation_create_duplicate(
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+) -> None:
     client, _ = auth_client
     evaluation = create_evaluation(name="Duplicate Eval")
     response = _request(
@@ -79,15 +101,18 @@ def test_evaluation_create_duplicate(auth_client, create_evaluation):
     assert response.status_code == 409
 
 
-def test_evaluation_read_not_found(auth_client):
+def test_evaluation_read_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "get", "/api/evaluations/999")
     assert response.status_code == 404
 
 
 def test_evaluation_annotations(
-    auth_client, create_evaluation, create_annotation, create_bitext
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    create_annotation: Callable[..., Annotation],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Annotation Eval")
     bitext = create_bitext()
@@ -101,8 +126,12 @@ def test_evaluation_annotations(
 
 
 def test_evaluation_annotations_missing_identity(
-    auth_client, create_evaluation, create_annotation, create_bitext, monkeypatch
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    create_annotation: Callable[..., Annotation],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Missing Identity Eval")
     bitext = create_bitext()
@@ -116,21 +145,23 @@ def test_evaluation_annotations_missing_identity(
     assert len(response.get_json()) == 1
 
 
-def test_evaluation_annotations_not_found(auth_client):
+def test_evaluation_annotations_not_found(
+    auth_client: tuple[FlaskClient, User]
+) -> None:
     client, _ = auth_client
     response = _request(client, "get", "/api/evaluations/999/annotations")
     assert response.status_code == 404
 
 
 def test_evaluation_results(
-    auth_client,
-    create_evaluation,
-    create_annotation,
-    create_annotation_system,
-    create_marking,
-    create_system,
-    create_bitext,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    create_annotation: Callable[..., Annotation],
+    create_annotation_system: Callable[..., AnnotationSystem],
+    create_marking: Callable[..., Marking],
+    create_system: Callable[..., System],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Results Eval")
     bitext = create_bitext(source="This is source", target="Target text")
@@ -167,33 +198,33 @@ def test_evaluation_results(
     assert any("Fluency/Spelling" in row for row in results)
 
 
-def test_evaluation_results_not_found(auth_client):
+def test_evaluation_results_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "get", "/api/evaluations/999/results")
     assert response.status_code == 404
 
 
 def test_evaluation_results_skip_missing_bitext(
-    auth_client,
-    create_evaluation,
-    create_annotation,
-    create_marking,
-    create_system,
-    create_bitext,
-    monkeypatch,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    create_annotation: Callable[..., Annotation],
+    create_marking: Callable[..., Marking],
+    create_system: Callable[..., System],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Skip Bitext Eval")
     bitext = create_bitext()
     annotation = create_annotation(user=user, evaluation=evaluation, bitext=bitext)
     create_marking(annotation=annotation, system=create_system())
 
-    original_get = db.session.get
+    original_get: Callable[..., Any] = db.session.get
 
-    def _fake_get(model, identity):
+    def _fake_get(model: type[Any], identity: int, *args: Any, **kwargs: Any) -> Any:
         if model.__name__ == "Bitext":
             return None
-        return original_get(model, identity)
+        return original_get(model, identity, *args, **kwargs)
 
     monkeypatch.setattr(db.session, "get", _fake_get)
     response = _request(client, "get", f"/api/evaluations/{evaluation.id}/results")
@@ -202,26 +233,26 @@ def test_evaluation_results_skip_missing_bitext(
 
 
 def test_evaluation_results_skip_missing_document(
-    auth_client,
-    create_evaluation,
-    create_annotation,
-    create_marking,
-    create_system,
-    create_bitext,
-    monkeypatch,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    create_annotation: Callable[..., Annotation],
+    create_marking: Callable[..., Marking],
+    create_system: Callable[..., System],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Skip Document Eval")
     bitext = create_bitext()
     annotation = create_annotation(user=user, evaluation=evaluation, bitext=bitext)
     create_marking(annotation=annotation, system=create_system())
 
-    original_get = db.session.get
+    original_get: Callable[..., Any] = db.session.get
 
-    def _fake_get(model, identity):
+    def _fake_get(model: type[Any], identity: int, *args: Any, **kwargs: Any) -> Any:
         if model.__name__ == "Document":
             return None
-        return original_get(model, identity)
+        return original_get(model, identity, *args, **kwargs)
 
     monkeypatch.setattr(db.session, "get", _fake_get)
     response = _request(client, "get", f"/api/evaluations/{evaluation.id}/results")
@@ -230,13 +261,13 @@ def test_evaluation_results_skip_missing_document(
 
 
 def test_evaluation_results_without_annotation_system(
-    auth_client,
-    create_evaluation,
-    create_annotation,
-    create_marking,
-    create_bitext,
-    create_system,
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    create_annotation: Callable[..., Annotation],
+    create_marking: Callable[..., Marking],
+    create_bitext: Callable[..., Bitext],
+    create_system: Callable[..., System],
+) -> None:
     client, user = auth_client
     evaluation = create_evaluation(name="Missing Annotation System Eval")
     bitext = create_bitext()
@@ -248,7 +279,10 @@ def test_evaluation_results_without_annotation_system(
     assert response.get_json() == []
 
 
-def test_evaluation_update_missing_field(auth_client, create_evaluation):
+def test_evaluation_update_missing_field(
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+) -> None:
     client, _ = auth_client
     evaluation = create_evaluation(name="Missing Update Eval")
     response = _request(
@@ -257,7 +291,10 @@ def test_evaluation_update_missing_field(auth_client, create_evaluation):
     assert response.status_code == 422
 
 
-def test_evaluation_update_duplicate(auth_client, create_evaluation):
+def test_evaluation_update_duplicate(
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+) -> None:
     client, _ = auth_client
     first = create_evaluation(name="First Eval")
     second = create_evaluation(name="Second Eval")
@@ -270,7 +307,7 @@ def test_evaluation_update_duplicate(auth_client, create_evaluation):
     assert response.status_code == 409
 
 
-def test_evaluation_update_not_found(auth_client):
+def test_evaluation_update_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(
         client,
@@ -281,16 +318,19 @@ def test_evaluation_update_not_found(auth_client):
     assert response.status_code == 404
 
 
-def test_evaluation_delete_not_found(auth_client):
+def test_evaluation_delete_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "delete", "/api/evaluations/999")
     assert response.status_code == 404
 
 
-def test_evaluation_database_errors(auth_client, monkeypatch):
+def test_evaluation_database_errors(
+    auth_client: tuple[FlaskClient, User],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -304,12 +344,14 @@ def test_evaluation_database_errors(auth_client, monkeypatch):
 
 
 def test_evaluation_update_delete_database_errors(
-    auth_client, create_evaluation, monkeypatch
-):
+    auth_client: tuple[FlaskClient, User],
+    create_evaluation: Callable[..., Evaluation],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     evaluation = create_evaluation(name="DB Eval")
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)

@@ -58,12 +58,6 @@ combine_as_imports = true
 lines_after_imports = 2
 
 [[tool.mypy.overrides]]
-module = "tests.*"
-disallow_untyped_defs = false
-disallow_untyped_calls = false
-disallow_incomplete_defs = false
-
-[[tool.mypy.overrides]]
 module = "human_evaluation_tool.resources.*"
 disable_error_code = ["misc"]
 

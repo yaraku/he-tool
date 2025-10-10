@@ -19,16 +19,28 @@ Human Evaluation Tool. If not, see <https://www.gnu.org/licenses/>.
 Written by Giovanni G. De Giacomo <giovanni@yaraku.com>, October 2025
 """
 
+from collections.abc import Callable
+from typing import Any
+
+from flask.testing import FlaskClient
+from pytest import MonkeyPatch
 from sqlalchemy.exc import SQLAlchemyError
+from werkzeug.test import TestResponse
 
 from human_evaluation_tool import db
+from human_evaluation_tool.models import Bitext, Document, User
 
 
-def _request(client, method: str, url: str, **kwargs):
-    return getattr(client, method)(url, **kwargs)
+def _request(client: FlaskClient, method: str, url: str, **kwargs: Any) -> TestResponse:
+    request_callable: Callable[..., TestResponse] = getattr(client, method)
+    return request_callable(url, **kwargs)
 
 
-def test_bitext_crud_flow(auth_client, create_bitext, create_document):
+def test_bitext_crud_flow(
+    auth_client: tuple[FlaskClient, User],
+    create_bitext: Callable[..., Bitext],
+    create_document: Callable[..., Document],
+) -> None:
     client, _ = auth_client
     document = create_document(name="Doc for Bitext")
     bitext = create_bitext(document=document)
@@ -72,7 +84,10 @@ def test_bitext_crud_flow(auth_client, create_bitext, create_document):
     assert not_found_response.status_code == 200
 
 
-def test_bitext_create_missing_field(auth_client, create_document):
+def test_bitext_create_missing_field(
+    auth_client: tuple[FlaskClient, User],
+    create_document: Callable[..., Document],
+) -> None:
     client, _ = auth_client
     document = create_document()
     response = _request(
@@ -84,7 +99,7 @@ def test_bitext_create_missing_field(auth_client, create_document):
     assert response.status_code == 422
 
 
-def test_bitext_create_invalid_document(auth_client):
+def test_bitext_create_invalid_document(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(
         client,
@@ -95,20 +110,23 @@ def test_bitext_create_invalid_document(auth_client):
     assert response.status_code == 422
 
 
-def test_bitext_read_not_found(auth_client):
+def test_bitext_read_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "get", "/api/bitexts/999")
     assert response.status_code == 404
 
 
-def test_bitext_update_missing_field(auth_client, create_bitext):
+def test_bitext_update_missing_field(
+    auth_client: tuple[FlaskClient, User],
+    create_bitext: Callable[..., Bitext],
+) -> None:
     client, _ = auth_client
     bitext = create_bitext()
     response = _request(client, "put", f"/api/bitexts/{bitext.id}", json={})
     assert response.status_code == 422
 
 
-def test_bitext_update_not_found(auth_client):
+def test_bitext_update_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(
         client,
@@ -119,17 +137,21 @@ def test_bitext_update_not_found(auth_client):
     assert response.status_code == 404
 
 
-def test_bitext_delete_not_found(auth_client):
+def test_bitext_delete_not_found(auth_client: tuple[FlaskClient, User]) -> None:
     client, _ = auth_client
     response = _request(client, "delete", "/api/bitexts/999")
     assert response.status_code == 404
 
 
-def test_bitext_create_database_error(auth_client, create_document, monkeypatch):
+def test_bitext_create_database_error(
+    auth_client: tuple[FlaskClient, User],
+    create_document: Callable[..., Document],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     document = create_document()
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -142,11 +164,15 @@ def test_bitext_create_database_error(auth_client, create_document, monkeypatch)
     assert response.status_code == 500
 
 
-def test_bitext_update_database_error(auth_client, create_bitext, monkeypatch):
+def test_bitext_update_database_error(
+    auth_client: tuple[FlaskClient, User],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     bitext = create_bitext()
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
@@ -159,11 +185,15 @@ def test_bitext_update_database_error(auth_client, create_bitext, monkeypatch):
     assert response.status_code == 500
 
 
-def test_bitext_delete_database_error(auth_client, create_bitext, monkeypatch):
+def test_bitext_delete_database_error(
+    auth_client: tuple[FlaskClient, User],
+    create_bitext: Callable[..., Bitext],
+    monkeypatch: MonkeyPatch,
+) -> None:
     client, _ = auth_client
     bitext = create_bitext()
 
-    def _raise_error():
+    def _raise_error() -> None:
         raise SQLAlchemyError("boom")
 
     monkeypatch.setattr(db.session, "commit", _raise_error)
