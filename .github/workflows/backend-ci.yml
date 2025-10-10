@@ -119,11 +119,6 @@ jobs:
           name: pytest-results-${{ matrix.python-version }}
           path: backend/pytest-results.xml
 
-      - name: Publish Unit Test Results
-        if: ${{ always() && github.event_name == 'pull_request' }}
-        uses: EnricoMi/publish-unit-test-result-action/linux@v2
-        with:
-          files: backend/pytest-results.xml
       - name: Post coverage comment
         if: ${{ github.event_name == 'pull_request' }}
         uses: py-cov-action/python-coverage-comment-action@v3
