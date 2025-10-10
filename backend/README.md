@@ -86,13 +86,16 @@ The persistent entities cover the evaluation workflow:
 All automated quality tooling is configured via Poetry:
 
 ```bash
-poetry run pytest                 # Run the full test suite
-poetry run coverage run -m pytest # Collect coverage
-poetry run coverage report        # Display coverage summary (targets 100 %)
-poetry run mypy src tests         # Strict static type checking
+poetry run black --check src tests       # Enforced formatting
+poetry run isort --check-only src tests  # Import ordering
+poetry run flake8 src tests              # Linting
+poetry run mypy src tests                # Strict static type checking
+poetry run pytest                        # Run the full test suite
+poetry run coverage run -m pytest        # Collect coverage
+poetry run coverage report               # Display coverage summary (targets 100 %)
 ```
 
-The pytest suite boots an application instance with an in-memory SQLite database, seeds fixtures for every model, and exercises success/error paths for each API endpoint (including auth flows and evaluation exports). Mypy runs in `strict` mode with targeted overrides for the test package.
+The pytest suite boots an application instance with an in-memory SQLite database, seeds fixtures for every model, and exercises success/error paths for each API endpoint (including auth flows and evaluation exports). Mypy runs in `strict` mode with targeted overrides for the test package, and the lint/format commands match the checks executed in continuous integration.
 
 ## Further reading
 

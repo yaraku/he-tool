@@ -55,12 +55,27 @@ poetry run mypy src tests
 
 ## Linting and formatting
 
-While not part of this task, Poetry declares `black` and `flake8` as dev dependencies. They can be run via:
+The backend enforces Black, isort, and Flake8 in continuous integration. Run the check-mode variants locally before opening a
+pull request:
 
 ```bash
-poetry run black src tests
+poetry run black --check src tests
+poetry run isort --check-only src tests
 poetry run flake8 src tests
 ```
+
+To automatically format imports and code, drop the `--check`/`--check-only` flags.
+
+## Continuous integration
+
+Pull requests that touch the backend trigger the **Backend CI** GitHub Actions workflow. The pipeline runs three independent jobs:
+
+1. **Lint & Format** – executes Black, isort, and Flake8 in check mode.
+2. **Static Typing** – runs `poetry run mypy src tests`.
+3. **Unit Tests** – runs the pytest suite on Python 3.10 and 3.11, publishes coverage artefacts, and reports the results back to the
+   pull request using [`EnricoMi/publish-unit-test-result-action`](https://github.com/EnricoMi/publish-unit-test-result-action).
+
+If any job fails, the pull request is blocked until the issues are resolved.
 
 ## Developer workflow checklist
 
