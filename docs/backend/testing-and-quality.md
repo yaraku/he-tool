@@ -27,7 +27,13 @@ poetry run coverage run -m pytest
 poetry run coverage report
 ```
 
-The goal is ≥99 % line coverage (the current suite hits 100 %). Branch coverage is enabled to surface unexecuted conditional logic.
+The goal is ≥99 % line coverage (the current suite hits 99 %). Branch coverage is enabled to surface unexecuted conditional logic. The GitHub Actions workflow also runs [`genbadge`](https://github.com/codacy/genbadge) to produce `backend/tests.svg`, `backend/flake8.svg`, and `backend/coverage.svg`, which appear at the top of the backend README. Locally, create `flake8.log` with `poetry run flake8 src tests --exit-zero --output-file flake8.log` and regenerate the badges after running the suite with:
+
+```bash
+poetry run genbadge tests --local -i pytest-results.xml -o tests.svg
+poetry run genbadge flake8 --local -i flake8.log -o flake8.svg
+poetry run genbadge coverage --local -i coverage.xml -o coverage.svg
+```
 
 ## Static typing with mypy
 

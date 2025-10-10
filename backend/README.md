@@ -1,5 +1,10 @@
 # Human Evaluation Tool Backend
 
+[![Backend CI](https://img.shields.io/github/actions/workflow/status/yaraku/he-tool/backend-ci.yml?branch=main&label=Backend%20CI)](https://github.com/yaraku/he-tool/actions/workflows/backend-ci.yml)
+![Tests](./tests.svg)
+![Flake8](./flake8.svg)
+![Coverage](./coverage.svg)
+
 The backend is a Flask + SQLAlchemy application that powers the Human Evaluation Tool. It exposes a REST API for managing evaluations, documents, bitext pairs, annotations, systems, markings, and authentication.
 
 ## Quick start

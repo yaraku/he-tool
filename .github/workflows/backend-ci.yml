@@ -112,6 +112,17 @@ jobs:
           --cov-report=term-missing
           --cov-report=xml
 
+      - name: Collect Flake8 report for badge
+        working-directory: backend
+        run: poetry run flake8 src tests --exit-zero --output-file flake8.log
+
+      - name: Generate status badges
+        working-directory: backend
+        run: |
+          poetry run genbadge tests --local -i pytest-results.xml -o tests.svg
+          poetry run genbadge flake8 --local -i flake8.log -o flake8.svg
+          poetry run genbadge coverage --local -i coverage.xml -o coverage.svg
+
       - name: Upload pytest results
         if: always()
         uses: actions/upload-artifact@v4
@@ -119,11 +130,31 @@ jobs:
           name: pytest-results-${{ matrix.python-version }}
           path: backend/pytest-results.xml
 
+      - name: Upload coverage badge
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-badges-${{ matrix.python-version }}
+          path: |
+            backend/tests.svg
+            backend/flake8.svg
+            backend/coverage.svg
+
       - name: Publish Unit Test Results
         if: ${{ always() && github.event_name == 'pull_request' }}
         uses: EnricoMi/publish-unit-test-result-action/linux@v2
         with:
           files: backend/pytest-results.xml
+
+      - name: Commit coverage badge
+        if: ${{ github.event_name != 'pull_request' && matrix.python-version == '3.10' }}
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: chore: update backend status badges
+          file_pattern: |
+            backend/tests.svg
+            backend/flake8.svg
+            backend/coverage.svg
 
       - name: Post coverage comment
         if: ${{ github.event_name == 'pull_request' }}
