@@ -35,23 +35,17 @@ The project requires `mypy --strict` to pass. Configuration highlights:
 
 ```toml
 [tool.mypy]
-python_version = "3.12"
+python_version = "3.10"
 strict = true
 allow_redefinition = true
-allow_untyped_calls = false
+disallow_untyped_calls = false
 follow_imports = "silent"
 ignore_missing_imports = true
 implicit_reexport = true
-
-[[tool.mypy.overrides]]
-module = "tests.*"
-allow_untyped_defs = true
-allow_untyped_calls = true
 ```
 
 - Application code is fully typed, including route functions returning `ResponseReturnValue` and SQLAlchemy models using the 2.0-style `Mapped[...]` annotations.
 - A typed wrapper around `jwt_required` in `auth.py` keeps authentication endpoints type-safe.
-- Tests intentionally allow untyped helper functions to avoid excessive annotation noise; however, key helpers such as `_get_cookie_value` and fixtures specify concrete types.
 
 Run mypy with:
 
