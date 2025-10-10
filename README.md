@@ -118,10 +118,12 @@ npm run dev
 
 ## Usage
 
+When you run the backend without PostgreSQL credentials it falls back to a local SQLite database. That database is pre-populated with a demo user (`yaraku@yaraku.com` / `yaraku`) and a "Sample Evaluation" so you can explore the workflow immediately.
+
 1. Access the application at http://localhost:5173
-2. Register a new account or log in
-3. Create a new evaluation project
-4. Upload documents and system outputs
+2. Log in with the demo credentials above or register a new account
+3. Open the "Sample Evaluation" to try the annotation UI, or create a new evaluation project
+4. Upload documents and system outputs when running your own studies
 5. Start evaluating translations
 
 ## Development

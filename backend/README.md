@@ -10,7 +10,12 @@ poetry install --with dev
 poetry run python main.py
 ```
 
-The development entry point automatically falls back to a SQLite database (`sqlite:///development.db`) and a deterministic JWT secret when the corresponding environment variables are absent. Override them via the environment before launching the server in order to point at PostgreSQL or to use a production-grade secret.
+The development entry point automatically falls back to a SQLite database (`sqlite:///development.db`) and a deterministic JWT secret when the corresponding environment variables are absent. Override them via the environment before launching the server in order to point at PostgreSQL or to use a production-grade secret. When the SQLite fallback is used the database is automatically seeded with:
+
+- A demo user: email `yaraku@yaraku.com`, password `yaraku`
+- A "Sample Evaluation" containing two sentences from the "Sample Machine Translation QA" document and machine translations produced by the "Test MT System"
+
+This makes it possible to log in immediately and try the annotation workflow without any manual setup.
 
 You can also use the standard Flask CLI:
 

@@ -25,6 +25,7 @@ from __future__ import annotations
 
 import json
 import os
+from datetime import datetime
 from pathlib import Path
 from typing import Any, Mapping
 
@@ -34,6 +35,7 @@ from flask_bcrypt import Bcrypt
 from flask_jwt_extended import JWTManager
 from flask_migrate import Migrate
 from flask_sqlalchemy import SQLAlchemy
+from sqlalchemy import select
 from sqlalchemy.orm import DeclarativeBase
 
 
@@ -135,6 +137,8 @@ def create_app(config_override: Mapping[str, Any] | None = None) -> Flask:
     auth.register_auth_blueprint(app)
     register_resources(app)
 
+    _maybe_seed_sqlite_sample_data(app)
+
     @app.route("/", defaults={"path": ""})
     @app.route("/<path:path>")
     def index(path: str) -> Response:
@@ -143,6 +147,132 @@ def create_app(config_override: Mapping[str, Any] | None = None) -> Flask:
         return send_from_directory(static_folder_str, "index.html")
 
     return app
+
+
+def _maybe_seed_sqlite_sample_data(app: Flask) -> None:
+    """Initialise a SQLite database with illustrative demo data.
+
+    The development configuration falls back to SQLite when no explicit
+    PostgreSQL configuration is provided. To make that experience usable out of
+    the box we create a default user and a tiny evaluation dataset the first
+    time the database starts empty.
+    """
+
+    uri = str(app.config.get("SQLALCHEMY_DATABASE_URI", ""))
+    if not uri.startswith("sqlite"):
+        return
+
+    from .models import (
+        Annotation,
+        AnnotationSystem,
+        Bitext,
+        Document,
+        Evaluation,
+        System,
+        User,
+    )
+
+    with app.app_context():
+        db.create_all()
+
+        default_email = "yaraku@yaraku.com"
+        existing_user = db.session.execute(
+            select(User).filter_by(email=default_email)
+        ).scalar_one_or_none()
+        if existing_user is not None:
+            return
+
+        now = datetime(2024, 1, 1, 12, 0, 0)
+
+        try:
+            user = User(
+                email=default_email,
+                password=bcrypt.generate_password_hash("yaraku").decode("utf-8"),
+                nativeLanguage="en",
+                createdAt=now,
+                updatedAt=now,
+            )
+            db.session.add(user)
+            db.session.flush()
+
+            document = Document(
+                name="Sample Machine Translation QA",
+                createdAt=now,
+                updatedAt=now,
+            )
+            db.session.add(document)
+            db.session.flush()
+
+            bitexts = [
+                Bitext(
+                    documentId=document.id,
+                    source="The quick brown fox jumps over the lazy dog.",
+                    target="A quick brown fox leaped over a resting dog.",
+                    createdAt=now,
+                    updatedAt=now,
+                ),
+                Bitext(
+                    documentId=document.id,
+                    source="Machine translation enables global communication.",
+                    target="Machine translation makes cross-language communication easier.",
+                    createdAt=now,
+                    updatedAt=now,
+                ),
+            ]
+            db.session.add_all(bitexts)
+            db.session.flush()
+
+            evaluation = Evaluation(
+                name="Sample Evaluation",
+                type="error-marking",
+                isFinished=False,
+                createdAt=now,
+                updatedAt=now,
+            )
+            db.session.add(evaluation)
+            db.session.flush()
+
+            system = System(
+                name="Test MT System",
+                createdAt=now,
+                updatedAt=now,
+            )
+            db.session.add(system)
+            db.session.flush()
+
+            translations = [
+                "The quick brown fox jump over the lazy dogs.",
+                "Machine translation enable global communications.",
+            ]
+
+            for bitext, translation in zip(bitexts, translations):
+                annotation = Annotation(
+                    userId=user.id,
+                    evaluationId=evaluation.id,
+                    bitextId=bitext.id,
+                    isAnnotated=False,
+                    comment=None,
+                    createdAt=now,
+                    updatedAt=now,
+                )
+                db.session.add(annotation)
+                db.session.flush()
+
+                annotation_system = AnnotationSystem(
+                    annotationId=annotation.id,
+                    systemId=system.id,
+                    translation=translation,
+                    createdAt=now,
+                    updatedAt=now,
+                )
+                db.session.add(annotation_system)
+
+            db.session.commit()
+        except Exception as exc:  # pragma: no cover - defensive
+            db.session.rollback()
+            app.logger.warning(
+                "Failed to seed SQLite sample data: %s", exc
+            )
 
 
 def _create_default_app() -> Flask:
