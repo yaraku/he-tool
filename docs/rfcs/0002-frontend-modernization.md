@@ -22,8 +22,8 @@ This RFC proposes a comprehensive modernization of the Human Evaluation Tool fro
    * Update linting/formatting configs to cover TypeScript (`@typescript-eslint/eslint-plugin`, `eslint-config-prettier`) and ensure Tailwind class sorting still works.
 
 2. **Dependency and tooling upgrades**
-   * Upgrade to the latest stable versions (checked at implementation time) of React, React DOM, TypeScript, Vite, React Router, TanStack Query 5, TailwindCSS 3.4+, Bootstrap 5.3+, React Hot Toast, ESLint 9 (or latest 8.x LTS if 9 remains beta), Prettier, Sass, and PostCSS ecosystem packages.
-   * Adopt Node.js 20 LTS (documented in `.nvmrc`/`package.json` `engines`) and ensure npm lockfile is regenerated.
+   * Upgrade to the latest stable versions (checked at implementation time) of React, React DOM, TypeScript, Vite, React Router, TanStack Query 5, Tailwind CSS 4+, Bootstrap 5.3+, React Hot Toast, ESLint 9 (or latest 8.x LTS if 9 remains beta), Prettier, Sass, and PostCSS ecosystem packages.
+   * Adopt Node.js 22 LTS (documented in `.nvmrc`/`package.json` `engines`) and ensure npm lockfile is regenerated.
    * Adjust source code for breaking changes (e.g., TanStack Query 5’s `QueryClient` defaults, `useMutation` return signatures, React Router API updates if any).
 
 3. **Documentation deliverables**
@@ -58,7 +58,7 @@ This RFC proposes a comprehensive modernization of the Human Evaluation Tool fro
 # The How
 
 1. **Baseline and preparation**
-   * Audit current dependency versions vs. npm latest, gather release notes for breaking changes, and capture existing behavior (screenshots/videos) to compare after upgrades.
+   * Audit current dependency versions vs. npm latest and gather release notes for breaking changes.
    * Introduce tooling prerequisites (`.nvmrc`, EditorConfig updates if needed).
 
 2. **TypeScript migration**
