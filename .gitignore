@@ -66,7 +66,6 @@ package-lock.json
 
 # Database files
 *.db
-backend/migrations/
 
 # Coverage and type-check artefacts
 .coverage

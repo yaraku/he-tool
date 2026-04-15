@@ -47,6 +47,7 @@ RUN pip install "poetry${POETRY_VERSION_CONSTRAINT}"
 WORKDIR /root
 COPY backend                        /root/backend
 COPY --from=frontend /root/public   /root/public
+COPY docker-entrypoint.sh           /docker-entrypoint.sh
 WORKDIR /root/backend
 
 # 3. Install Python package
@@ -56,11 +57,13 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONFAULTHANDLER=1
 ENV PYTHONHASHSEED=random
 RUN poetry install --only main --no-interaction --no-ansi \
-    && rm -rf ~/.cache
+    && rm -rf ~/.cache \
+    && chmod +x /docker-entrypoint.sh
 
 # 4. Expose the required ports
 EXPOSE 8000
 
-# 5. Execute the microservice using gunicorn.
+# 5. Run migrations then start gunicorn.
 ENV WORKERS=1
-CMD ["sh", "-c", "gunicorn --bind 0.0.0.0:8000 -w $WORKERS human_evaluation_tool:app"]
+ENV FLASK_APP=human_evaluation_tool:app
+ENTRYPOINT ["/docker-entrypoint.sh"]
