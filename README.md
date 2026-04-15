@@ -28,59 +28,67 @@ The project consists of three main components:
 
 ## Prerequisites
 
-- Python 3.10 or later
-- Node.js 18 or later
-- PostgreSQL 13 or later
-- Poetry (Python package manager)
-- npm (Node.js package manager)
+- [Podman](https://podman.io/) (or Docker — commands are identical)
+- `podman compose` or `podman-compose` for the multi-container setup
+
+For manual setup you also need Python 3.10+, Node.js 18+, PostgreSQL 16+, and Poetry.
 
 ## Installation and Setup
 
-### Option 1: Using Docker (Recommended)
+### Option 1: Podman Compose with PostgreSQL (Recommended)
 
-1. Build the Docker image:
+This is the production-ready path. PostgreSQL data is persisted in a named volume.
+
+1. Copy and configure the environment file:
 ```sh
-docker build -t yaraku/human-evaluation-tool .
+cp .env.example .env
+# Edit .env — set DB_PASSWORD and JWT_SECRET_KEY to real values.
+# Generate a secret key with:
+#   python3 -c "import secrets; print(secrets.token_hex(32))"
 ```
 
-> **Note:** The Docker build installs Poetry versions that satisfy `>=1.5,<1.7` by default. You can override the constraint with
-> `--build-arg POETRY_VERSION_CONSTRAINT="==1.6.1"` if you need to pin an exact release.
-
-2. Run the container:
+2. Start everything:
 ```sh
-docker run --rm -it -p 8000:8000 yaraku/human-evaluation-tool
+podman compose up
 ```
 
-### Option 2: Manual Setup
+On first start the app container runs `flask db upgrade` to create the schema, then starts gunicorn. Open http://localhost:8000.
 
-1. Install prerequisites:
-   - Python 3.10 or later
-   - Node.js 18 or later
-   - PostgreSQL 13 or later
-   - Poetry (Python package manager)
-   - npm (Node.js package manager)
-
-2. Set up PostgreSQL:
+To rebuild after code changes:
 ```sh
-# Start PostgreSQL service
-sudo service postgresql start
+podman compose up --build
+```
 
-# Create database and set password
+### Option 2: Single container (SQLite demo)
+
+No PostgreSQL needed. Runs with an in-memory SQLite database pre-seeded with a demo user and sample evaluation.
+
+```sh
+podman build -t he-tool .
+podman run --rm -p 8000:8000 he-tool
+```
+
+> **Note:** The build installs Poetry versions satisfying `>=1.5,<1.7` by default.
+> Override with `--build-arg POETRY_VERSION_CONSTRAINT="==1.6.1"` if needed.
+
+### Option 3: Manual Setup
+
+1. Set up PostgreSQL and create a database:
+```sh
 sudo -u postgres createdb he_tool
 sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
 ```
 
-3. Set up the backend:
+2. Set up the backend:
 ```sh
 cd backend
 
-# Install dependencies (Poetry 1.5.x - 1.6.x)
+# Install dependencies
 poetry install
 
-# Create and configure .env file
+# Create .env
 cat > .env << EOL
 FLASK_APP=human_evaluation_tool:app
-FLASK_ENV=development
 DB_HOST=localhost
 DB_PORT=5432
 DB_NAME=he_tool
@@ -89,33 +97,21 @@ DB_PASSWORD=postgres
 JWT_SECRET_KEY=development-secret-key
 EOL
 
-# Initialize and run migrations
-poetry run flask db init
-poetry run flask db migrate
+# Apply migrations (schema is already defined in backend/migrations/)
 poetry run flask db upgrade
 
-# Start the backend server (development)
+# Start the development server
 poetry run python main.py
-
-# Or launch with Gunicorn (production-style)
-poetry run gunicorn --bind 0.0.0.0:8000 human_evaluation_tool:app
 ```
 
-4. Set up the frontend (in a new terminal):
+3. Set up the frontend (in a new terminal):
 ```sh
 cd frontend
-
-# Install dependencies
 npm install
-
-# Create and configure .env file
-echo "VITE_API_URL=http://localhost:5000" > .env
-
-# Start the development server
 npm run dev
 ```
 
-5. Access the application:
+4. Access the application:
    - Frontend: http://localhost:5173
    - Backend API: http://localhost:5000
 
@@ -141,9 +137,9 @@ The backend is built with Flask and uses:
 Key commands:
 ```sh
 cd backend
-poetry run flask db migrate  # Create new migrations
-poetry run flask db upgrade  # Apply migrations
-poetry run python main.py  # Run development server
+poetry run flask db upgrade              # Apply pending migrations
+poetry run flask db migrate -m "desc"   # Generate a new migration after model changes
+poetry run python main.py               # Run development server
 poetry run gunicorn --bind 0.0.0.0:8000 human_evaluation_tool:app  # Run with Gunicorn
 ```
 
@@ -174,6 +170,32 @@ The application uses a PostgreSQL database with the following main entities:
 - Markings: Error markings and categorizations
 
 For a detailed ER diagram, see `backend/README.md`.
+
+## Customizing MQM Error Categories
+
+Error categories are defined in `config/categories.txt` using a simple indented format:
+
+```
+000: No Error
+
+Accuracy
+  A01: Mistranslation
+  A02: Omission
+  ...
+
+Fluency
+  F01: Grammar
+  ...
+```
+
+Top-level lines without indentation are group headers; indented lines are `ID: Label` entries. The ID is stored in the database — change it only with a migration. The label is display-only and safe to edit freely.
+
+After editing the file, regenerate the backend constants and frontend selector:
+
+```sh
+python3 scripts/gen_categories.py
+cd frontend && npm run build   # or podman compose up --build
+```
 
 ## Contributing
 
