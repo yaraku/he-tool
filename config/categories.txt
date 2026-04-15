@@ -1,0 +1,54 @@
+# MQM error categories for this project.
+# Edit this file, then run:  python scripts/gen_categories.py
+#
+# Format:
+#   - Top-level lines with no indent and no colon  →  group header (optgroup)
+#   - Top-level lines with a colon                 →  ungrouped item  (id: Label)
+#   - Indented lines with a colon                  →  grouped item    (id: Label)
+#   - Lines starting with # and blank lines are ignored.
+#
+# The id is stored in the database; changing an id requires a migration.
+# The label is only used for display and TSV export — safe to change freely.
+
+000: No Error
+
+Accuracy
+  A01: Mistranslation
+  A02: Positive/Negative
+  A03: Numbers
+  A04: Pronoun
+  A05: Proper Noun
+  A06: Omission
+  A07: Addition
+  A08: Untranslated
+  A09: Others
+
+Fluency
+  F01: Typography/Spelling
+  F02: Wrong Kanji
+  F03: Grammar
+  F04: Misuse
+  F05: Collocation
+  F06: Grammar Register
+  F07: Ambiguity
+  F08: Unintelligible
+  F09: Symbols
+  F10: Others
+
+Terminology
+  T01: Inconsistent with termbase
+  T02: Inconsistent with domain
+  T03: Inconsistent use
+  T04: Others
+
+Style
+  S01: Inconsistent with company style
+  S02: Register
+  S03: Inconsistent style
+  S04: Others
+
+Locale
+  L01: Locale convention
+
+SourceError
+  SE1: Source Error
